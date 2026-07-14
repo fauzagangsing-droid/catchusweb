@@ -1,0 +1,219 @@
+.card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.tableWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #999;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  color: #333;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background-color: #fafafa;
+}
+
+.thProduct {
+  min-width: 220px;
+}
+
+.thActions {
+  text-align: right;
+}
+
+.stateCell {
+  text-align: center;
+  padding: 44px 16px;
+  color: #999;
+  white-space: normal;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+  border-radius: 50%;
+  border: 2px solid #e2e2e2;
+  border-top-color: #000;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.productCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.thumbWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #f1f1f1;
+}
+
+.thumb {
+  object-fit: cover;
+}
+
+.productInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.productName {
+  font-weight: 600;
+  color: #000;
+  white-space: normal;
+}
+
+.productSlug {
+  font-size: 12px;
+  color: #999;
+}
+
+.categoryBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #f1f1f1;
+  color: #444;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.priceCell {
+  font-weight: 600;
+  color: #000;
+}
+
+.toggleBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e2e2;
+  background-color: #fff;
+  color: #ccc;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.toggleBtn:hover:not(:disabled) {
+  border-color: #000;
+}
+
+.toggleBtnOn {
+  background-color: #000;
+  border-color: #000;
+  color: #ffd43b;
+}
+
+.toggleBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.statusPill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.statusPill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.statusActive {
+  background-color: #e5f7ea;
+  color: #1a7a34;
+}
+
+.statusInactive {
+  background-color: #f1f1f1;
+  color: #888;
+}
+
+.actionsCell {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.iconBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e2e2;
+  background-color: #fff;
+  color: #555;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.iconBtn:hover {
+  background-color: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.iconBtnDanger:hover {
+  background-color: #b3222f;
+  border-color: #b3222f;
+}

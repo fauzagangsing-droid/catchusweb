@@ -51,9 +51,36 @@ export interface ProductWithRelations extends Product {
 }
 
 /**
+ * Insert/Update payload shapes for the Product Management module (Phase 3).
+ * Only columns an admin actually supplies are required; anything with a
+ * database default (id, timestamps, stock, etc.) is optional so callers
+ * don't have to pass values the database already fills in.
+ */
+export interface ProductInsert {
+  slug: string;
+  name: string;
+  description?: string | null;
+  brand?: string | null;
+  sku?: string | null;
+  category_id?: string | null;
+  price: number;
+  compare_price?: number | null;
+  stock?: number;
+  weight?: number | null;
+  status?: ProductStatus;
+  featured?: boolean;
+  shopee_url?: string | null;
+  tiktok_url?: string | null;
+  tokopedia_url?: string | null;
+}
+
+export type ProductUpdate = Partial<ProductInsert>;
+
+/**
  * Minimal Supabase Database type so `createClient<Database>()` gives typed
- * `.from("products")` calls. Only `Row` shapes are defined since Phase 2
- * is read-only (no insert/update payloads needed yet).
+ * `.from("products")` calls. `Row` shapes were the only thing needed while
+ * Phase 2 was read-only; `Insert`/`Update` are added here (additively, Row
+ * untouched) now that the Product Management module needs typed writes.
  */
 export interface Database {
   public: {
@@ -63,6 +90,8 @@ export interface Database {
       };
       products: {
         Row: Product;
+        Insert: ProductInsert;
+        Update: ProductUpdate;
       };
       product_images: {
         Row: ProductImage;
