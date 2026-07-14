@@ -1,0 +1,25 @@
+// Previously a fixed union ("sweater" | "t-shirt" | "beanie"). Categories now
+// come from the `categories` table in Supabase, so this is a plain string —
+// adding a new category in the database no longer requires a code change here.
+export type ProductCategory = string;
+
+export interface Product {
+  id: string;
+  filter: ProductCategory;
+  image: string;
+  alt: string;
+  badge: string;
+  title: string;
+  priceOld: string;
+  priceNew: string;
+  buyUrl: string;
+}
+
+export type ModelFilter = "T-shirt" | "Sweater";
+
+export interface ModelImage {
+  id: string;
+  image: string;
+  alt: string;
+  filter: ModelFilter;
+}
