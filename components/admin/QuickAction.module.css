@@ -1,0 +1,60 @@
+.action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background-color: #ffffff;
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  padding: 18px 20px;
+  text-decoration: none;
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.action:hover {
+  background-color: #000;
+  border-color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+}
+
+.iconWrap {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #f1f1f1;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.action:hover .iconWrap {
+  background-color: #ffffff;
+}
+
+.label {
+  flex: 1;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #000;
+  transition: color 0.2s ease;
+}
+
+.action:hover .label {
+  color: #fff;
+}
+
+.arrow {
+  color: #bbb;
+  font-size: 17px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.action:hover .arrow {
+  color: #fff;
+  transform: translateX(3px);
+}
