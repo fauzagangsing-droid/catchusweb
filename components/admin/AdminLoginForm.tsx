@@ -1,29 +1,44 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import styles from "./login.module.css";
 
 /**
- * Admin Login form — Phase 3, UI only.
+ * Admin Login form — wired to real Supabase Auth (email + password).
  *
- * IMPORTANT: There is no authentication wired up here yet. onSubmit does not
- * call Supabase Auth or any API route. It only simulates the loading/error
- * states so the UI can be reviewed and approved before real auth is added
- * in a later phase. Replace the body of handleSubmit with a real Supabase
- * Auth call (e.g. supabase.auth.signInWithPassword) when that phase starts.
+ * UI/markup is unchanged from the original placeholder version. Only
+ * handleSubmit's internals changed: it now calls
+ * supabaseBrowser.auth.signInWithPassword, maps Supabase's error messages to
+ * friendlier copy, and redirects to /admin/dashboard on success.
  */
+function toFriendlyMessage(rawMessage: string): string {
+  const message = rawMessage.toLowerCase();
+
+  if (message.includes("invalid login credentials")) {
+    return "Incorrect email or password. Please try again.";
+  }
+  if (message.includes("email not confirmed")) {
+    return "This account's email hasn't been confirmed yet.";
+  }
+  if (message.includes("too many requests") || message.includes("rate limit")) {
+    return "Too many attempts. Please wait a moment and try again.";
+  }
+  return "Something went wrong signing in. Please try again.";
+}
+
 export default function AdminLoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Placeholder-only validation so the error UI is demonstrable.
-    // No network/auth call happens here — see note above.
     if (!email || !password) {
       setError("Please enter both email and password.");
       return;
@@ -32,12 +47,25 @@ export default function AdminLoginForm() {
     setError(null);
     setIsLoading(true);
 
-    // Simulated delay to preview the loading state. Remove this timeout
-    // and replace with a real Supabase Auth call in the auth phase.
-    window.setTimeout(() => {
+    try {
+      const { error: signInError } = await supabaseBrowser.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(toFriendlyMessage(signInError.message));
+        setIsLoading(false);
+        return;
+      }
+
+      // Success — keep the button in its loading state while we navigate
+      // away so there's no flash of an idle "Sign In" button.
+      router.replace("/admin/dashboard");
+    } catch {
+      setError("Couldn't reach the server. Please check your connection and try again.");
       setIsLoading(false);
-      setError("Login is not implemented yet. This is a UI placeholder.");
-    }, 900);
+    }
   };
 
   return (
