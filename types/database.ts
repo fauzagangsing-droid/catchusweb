@@ -57,6 +57,13 @@ export interface ProductWithRelations extends Product {
  * don't have to pass values the database already fills in.
  */
 export interface ProductInsert {
+  /**
+   * Optional client-generated id. The column defaults to gen_random_uuid(),
+   * but the Product Image Upload feature needs the id *before* the product
+   * row exists (to build the Storage path while the Add modal is still
+   * open), so it generates one up front and supplies it here on insert.
+   */
+  id?: string;
   slug: string;
   name: string;
   description?: string | null;
@@ -75,6 +82,15 @@ export interface ProductInsert {
 }
 
 export type ProductUpdate = Partial<ProductInsert>;
+
+/** Insert/Update payload shapes for the Product Image Upload feature. */
+export interface ProductImageInsert {
+  product_id: string;
+  image_url: string;
+  is_thumbnail?: boolean;
+}
+
+export type ProductImageUpdate = Partial<ProductImageInsert>;
 
 /**
  * Minimal Supabase Database type so `createClient<Database>()` gives typed
@@ -95,6 +111,8 @@ export interface Database {
       };
       product_images: {
         Row: ProductImage;
+        Insert: ProductImageInsert;
+        Update: ProductImageUpdate;
       };
     };
   };

@@ -24,6 +24,8 @@ import {
   type ProductSortField,
   type SortDirection,
 } from "@/lib/admin-products";
+import { deleteProductImageRow, saveProductImage } from "@/lib/product-images";
+import { deleteStorageImage, getImagePathFromPublicUrl } from "@/lib/storage";
 import type { Category, ProductWithRelations } from "@/types/database";
 import styles from "./products.module.css";
 
@@ -196,7 +198,7 @@ function ProductsContent() {
     setFormSubmitting(true);
     setFormError(null);
 
-    const payload = {
+    const basePayload = {
       name: values.name.trim(),
       slug: values.slug.trim(),
       price: Number(values.price),
@@ -208,13 +210,45 @@ function ProductsContent() {
 
     const result =
       modalMode === "edit" && editingProduct
-        ? await updateProduct(editingProduct.id, payload)
-        : await createProduct(payload);
+        ? await updateProduct(editingProduct.id, basePayload)
+        : // Add mode: ImageUploader already uploaded to Storage under this id,
+          // so the product row must be created with the same id.
+          await createProduct({ ...basePayload, id: values.image.productId });
 
-    if (result.error) {
-      setFormError(result.error);
+    if (result.error || !result.data) {
+      setFormError(result.error ?? "Something went wrong. Please try again.");
       setFormSubmitting(false);
       return;
+    }
+
+    // Product row saved — now reconcile the product_images row to match
+    // what the ImageUploader resolved (new upload / unchanged / removed).
+    // The product fields already saved successfully at this point, so on an
+    // image-step failure we keep the modal open (with the product's other
+    // changes intact) instead of discarding that save.
+    const productId = result.data.id;
+    const { imageUrl, imageId, storagePathToDeleteOnSave } = values.image;
+    let imageStepError: string | null = null;
+
+    if (imageUrl) {
+      const imageResult = await saveProductImage(productId, imageUrl, imageId);
+      imageStepError = imageResult.error;
+    } else if (imageId) {
+      const removeResult = await deleteProductImageRow(imageId);
+      imageStepError = removeResult.error;
+    }
+
+    if (imageStepError) {
+      setFormError(imageStepError);
+      setFormSubmitting(false);
+      await loadProducts();
+      return;
+    }
+
+    // Only purge the previous Storage file once the new state is confirmed
+    // saved above — never delete it while its DB row might still reference it.
+    if (storagePathToDeleteOnSave) {
+      void deleteStorageImage(storagePathToDeleteOnSave);
     }
 
     setFormSubmitting(false);
@@ -238,6 +272,17 @@ function ProductsContent() {
     if (!deletingProduct) return;
     setDeleteSubmitting(true);
     setDeleteError(null);
+
+    // product_images rows are removed automatically (ON DELETE CASCADE in
+    // schema.sql), but the actual file in Supabase Storage is not — purge it
+    // first so deleting a product never leaves an orphaned image behind.
+    const imageUrl = deletingProduct.product_images?.[0]?.image_url;
+    if (imageUrl) {
+      const path = getImagePathFromPublicUrl(imageUrl);
+      if (path) {
+        await deleteStorageImage(path);
+      }
+    }
 
     const { error } = await deleteProduct(deletingProduct.id);
 

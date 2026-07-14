@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import type { Category, ProductWithRelations } from "@/types/database";
 import {
   slugify,
@@ -8,6 +8,7 @@ import {
   type ProductFormErrors,
   type ProductFormValues,
 } from "@/lib/admin-products";
+import ImageUploader, { type ImageUploaderResolvedValue } from "./ImageUploader";
 import styles from "./ProductForm.module.css";
 
 export interface ProductFormProps {
@@ -19,7 +20,9 @@ export interface ProductFormProps {
   onCancel: () => void;
 }
 
-function toFormValues(product?: ProductWithRelations | null): ProductFormValues {
+type TextFieldValues = Omit<ProductFormValues, "image">;
+
+function toFormValues(product?: ProductWithRelations | null): TextFieldValues {
   if (!product) {
     return {
       name: "",
@@ -51,9 +54,34 @@ export default function ProductForm({
   onSubmit,
   onCancel,
 }: ProductFormProps) {
-  const [values, setValues] = useState<ProductFormValues>(() => toFormValues(initialProduct));
+  const [values, setValues] = useState<TextFieldValues>(() => toFormValues(initialProduct));
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [slugTouched, setSlugTouched] = useState(Boolean(initialProduct));
+
+  // Stable id for the lifetime of this modal instance: the existing product's
+  // id when editing, or a freshly generated one when adding (so the image can
+  // be uploaded to Storage before the product row itself is created).
+  const clientProductId = useMemo(
+    () => initialProduct?.id ?? crypto.randomUUID(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [initialProduct]
+  );
+
+  const initialImage = useMemo(() => {
+    const images = initialProduct?.product_images;
+    if (!images || images.length === 0) return null;
+    const thumbnail = images.find((image) => image.is_thumbnail) ?? images[0];
+    return { id: thumbnail.id, url: thumbnail.image_url };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProduct]);
+
+  const [imageValue, setImageValue] = useState<ImageUploaderResolvedValue>(() => ({
+    productId: clientProductId,
+    imageId: initialImage?.id ?? null,
+    imageUrl: initialImage?.url ?? null,
+    storagePathToDeleteOnSave: null,
+    uploading: false,
+  }));
 
   const handleNameChange = (name: string) => {
     setValues((prev) => ({
@@ -74,10 +102,12 @@ export default function ProductForm({
     const nextErrors = validateProductForm(values);
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length === 0) {
-      onSubmit(values);
+    if (Object.keys(nextErrors).length === 0 && !imageValue.uploading) {
+      onSubmit({ ...values, image: imageValue });
     }
   };
+
+  const isSubmitDisabled = submitting || imageValue.uploading;
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
@@ -87,6 +117,13 @@ export default function ProductForm({
           <span>{serverError}</span>
         </div>
       )}
+
+      <ImageUploader
+        productId={clientProductId}
+        initialImage={initialImage}
+        disabled={submitting}
+        onChange={setImageValue}
+      />
 
       <div className={styles.field}>
         <label className={styles.label} htmlFor="product-name">
@@ -212,10 +249,12 @@ export default function ProductForm({
         >
           Cancel
         </button>
-        <button type="submit" className={styles.submitBtn} disabled={submitting}>
+        <button type="submit" className={styles.submitBtn} disabled={isSubmitDisabled}>
           {submitting && <span className={styles.spinner} aria-hidden="true" />}
           {submitting
             ? "Saving..."
+            : imageValue.uploading
+            ? "Uploading image..."
             : initialProduct
             ? "Save Changes"
             : "Add Product"}

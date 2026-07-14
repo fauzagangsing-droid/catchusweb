@@ -252,6 +252,23 @@ export function slugify(input: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/**
+ * Resolved image state for the Product Image Upload feature, produced by
+ * ImageUploader and carried through ProductFormValues so
+ * app/admin/products/page.tsx can save/replace/remove the product_images
+ * row and purge Supabase Storage after the product itself is saved.
+ */
+export interface ProductImageFieldValue {
+  /** Client-generated id used as the product's id when creating (Add mode), or the existing product's id (Edit mode). */
+  productId: string;
+  /** Final image URL to persist, or null if the product should end up with no image. */
+  imageUrl: string | null;
+  /** Existing product_images.id to update, or null to insert a new row. */
+  imageId: string | null;
+  /** Storage path of an old/replaced image to delete once the save succeeds, or null. */
+  storagePathToDeleteOnSave: string | null;
+}
+
 export interface ProductFormValues {
   name: string;
   slug: string;
@@ -260,6 +277,7 @@ export interface ProductFormValues {
   description: string;
   featured: boolean;
   active: boolean;
+  image: ProductImageFieldValue;
 }
 
 export type ProductFormErrors = Partial<Record<keyof ProductFormValues, string>>;

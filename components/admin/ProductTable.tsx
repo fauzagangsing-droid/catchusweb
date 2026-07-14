@@ -60,6 +60,10 @@ export default function ProductTable({
               products.map((product) => {
                 const isToggling = togglingId === product.id;
                 const isActive = product.status === "active";
+                const thumbnail =
+                  product.product_images?.find((image) => image.is_thumbnail) ??
+                  product.product_images?.[0] ??
+                  null;
 
                 return (
                   <tr key={product.id}>
@@ -67,7 +71,7 @@ export default function ProductTable({
                       <div className={styles.productCell}>
                         <div className={styles.thumbWrap}>
                           <Image
-                            src="/images/catchus.PNG"
+                            src={thumbnail?.image_url ?? "/images/catchus.PNG"}
                             alt={product.name}
                             fill
                             sizes="44px"
