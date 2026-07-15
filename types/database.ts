@@ -15,6 +15,16 @@ export interface Category {
   created_at: string;
 }
 
+/** Insert/update payloads for the Category Management module. */
+export interface CategoryInsert {
+  name: string;
+  slug: string;
+  icon?: string | null;
+  banner?: string | null;
+}
+
+export type CategoryUpdate = Partial<CategoryInsert>;
+
 export interface Product {
   id: string;
   slug: string;
@@ -103,6 +113,8 @@ export interface Database {
     Tables: {
       categories: {
         Row: Category;
+        Insert: CategoryInsert;
+        Update: CategoryUpdate;
       };
       products: {
         Row: Product;

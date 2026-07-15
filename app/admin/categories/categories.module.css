@@ -1,0 +1,7 @@
+.shell { display: flex; min-height: 100vh; background-color: #f1f1f1; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.content { padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1200px; width: 100%; margin-inline: auto; }
+.banner { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 10px; font-size: 13.5px; }
+.errorBanner { background-color: #fdecee; border: 1px solid #f3c4c9; color: #b3222f; }
+.successBanner { background-color: #e5f7ea; border: 1px solid #bde8c8; color: #1a7a34; }
+@media (max-width: 900px) { .content { padding: 22px 20px 40px; } }

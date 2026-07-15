@@ -52,3 +52,24 @@ create policy "Authenticated delete products"
   on public.products for delete
   to authenticated
   using (true);
+
+-- Authenticated admins can manage categories. Public read access remains
+-- unchanged in schema.sql; these policies add only the admin write actions.
+drop policy if exists "Authenticated insert categories" on public.categories;
+create policy "Authenticated insert categories"
+  on public.categories for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "Authenticated update categories" on public.categories;
+create policy "Authenticated update categories"
+  on public.categories for update
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "Authenticated delete categories" on public.categories;
+create policy "Authenticated delete categories"
+  on public.categories for delete
+  to authenticated
+  using (true);
