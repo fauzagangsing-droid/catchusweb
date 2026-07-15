@@ -9,6 +9,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
  */
 
 export const PRODUCT_IMAGE_BUCKET = "product-images";
+export const BANNER_IMAGE_BUCKET = "banner-images";
 export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
@@ -48,8 +49,8 @@ export function buildImagePath(productId: string, file: File): string {
   return `${productId}/${randomId()}.${extension}`;
 }
 
-export function getPublicImageUrl(path: string): string {
-  const { data } = supabaseBrowser.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(path);
+export function getPublicImageUrl(path: string, bucket = PRODUCT_IMAGE_BUCKET): string {
+  const { data } = supabaseBrowser.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -58,8 +59,8 @@ export function getPublicImageUrl(path: string): string {
  * so a previously-saved image_url from the database can be deleted later.
  * Returns null if the URL doesn't match this bucket's public URL shape.
  */
-export function getImagePathFromPublicUrl(url: string): string | null {
-  const marker = `/object/public/${PRODUCT_IMAGE_BUCKET}/`;
+export function getImagePathFromPublicUrl(url: string, bucket = PRODUCT_IMAGE_BUCKET): string | null {
+  const marker = `/object/public/${bucket}/`;
   const index = url.indexOf(marker);
   if (index === -1) return null;
   try {
@@ -86,12 +87,13 @@ export interface CancellableUpload {
  * signed-in admin's access token) using XMLHttpRequest, which does expose
  * upload progress events.
  */
-export function uploadProductImage(
-  productId: string,
+function uploadImage(
+  bucket: string,
+  ownerId: string,
   file: File,
   onProgress: (percent: number) => void
 ): CancellableUpload {
-  const path = buildImagePath(productId, file);
+  const path = buildImagePath(ownerId, file);
   const xhr = new XMLHttpRequest();
 
   const promise = (async (): Promise<UploadResult> => {
@@ -107,7 +109,7 @@ export function uploadProductImage(
       throw new Error("Storage isn't configured. Please contact the site admin.");
     }
 
-    const uploadUrl = `${supabaseUrl}/storage/v1/object/${PRODUCT_IMAGE_BUCKET}/${path}`;
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${path}`;
 
     return new Promise<UploadResult>((resolve, reject) => {
       xhr.open("POST", uploadUrl, true);
@@ -125,7 +127,7 @@ export function uploadProductImage(
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           onProgress(100);
-          resolve({ path, publicUrl: getPublicImageUrl(path) });
+          resolve({ path, publicUrl: getPublicImageUrl(path, bucket) });
           return;
         }
         let message = "Upload failed. Please try again.";
@@ -148,10 +150,27 @@ export function uploadProductImage(
   return { promise, cancel: () => xhr.abort() };
 }
 
+export function uploadProductImage(
+  productId: string,
+  file: File,
+  onProgress: (percent: number) => void
+): CancellableUpload {
+  return uploadImage(PRODUCT_IMAGE_BUCKET, productId, file, onProgress);
+}
+
+/** Uploads a banner image through the same authenticated, progress-aware flow as product images. */
+export function uploadBannerImage(
+  bannerId: string,
+  file: File,
+  onProgress: (percent: number) => void
+): CancellableUpload {
+  return uploadImage(BANNER_IMAGE_BUCKET, bannerId, file, onProgress);
+}
+
 /** Best-effort delete — a missing/already-gone file is not treated as an error. */
-export async function deleteStorageImage(path: string): Promise<void> {
+export async function deleteStorageImage(path: string, bucket = PRODUCT_IMAGE_BUCKET): Promise<void> {
   try {
-    await supabaseBrowser.storage.from(PRODUCT_IMAGE_BUCKET).remove([path]);
+    await supabaseBrowser.storage.from(bucket).remove([path]);
   } catch {
     // best-effort cleanup; ignore failures so callers never block on it
   }

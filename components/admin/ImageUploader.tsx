@@ -20,8 +20,23 @@ export interface ImageUploaderProps {
   initialImage: { id: string; url: string } | null;
   /** True while the parent form is submitting — disables all interaction. */
   disabled?: boolean;
+  storage?: ImageUploaderStorage;
+  label?: string;
+  imageAlt?: string;
   onChange: (value: ImageUploaderResolvedValue) => void;
 }
+
+export interface ImageUploaderStorage {
+  upload: (ownerId: string, file: File, onProgress: (percent: number) => void) => CancellableUpload;
+  remove: (path: string) => Promise<void>;
+  getPathFromPublicUrl: (url: string) => string | null;
+}
+
+const productImageStorage: ImageUploaderStorage = {
+  upload: uploadProductImage,
+  remove: deleteStorageImage,
+  getPathFromPublicUrl: getImagePathFromPublicUrl,
+};
 
 export interface ImageUploaderResolvedValue extends ProductImageFieldValue {
   uploading: boolean;
@@ -55,7 +70,15 @@ function resolveValue(
   return { productId, imageId, imageUrl: null, storagePathToDeleteOnSave: previousPath, uploading: false };
 }
 
-export default function ImageUploader({ productId, initialImage, disabled, onChange }: ImageUploaderProps) {
+export default function ImageUploader({
+  productId,
+  initialImage,
+  disabled,
+  storage = productImageStorage,
+  label = "Product Image",
+  imageAlt = "Product preview",
+  onChange,
+}: ImageUploaderProps) {
   const [source, setSource] = useState<ImageSource>(
     initialImage ? { kind: "existing", url: initialImage.url } : { kind: "none" }
   );

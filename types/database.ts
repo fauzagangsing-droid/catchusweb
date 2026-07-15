@@ -15,6 +15,34 @@ export interface Category {
   created_at: string;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  button_text: string | null;
+  button_url: string | null;
+  desktop_image_url: string | null;
+  mobile_image_url: string | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BannerInsert {
+  id?: string;
+  title: string;
+  subtitle?: string | null;
+  button_text?: string | null;
+  button_url?: string | null;
+  desktop_image_url?: string | null;
+  mobile_image_url?: string | null;
+  is_active?: boolean;
+  display_order?: number;
+}
+
+export type BannerUpdate = Partial<BannerInsert>;
+
 /** Insert/update payloads for the Category Management module. */
 export interface CategoryInsert {
   name: string;
@@ -115,6 +143,11 @@ export interface Database {
         Row: Category;
         Insert: CategoryInsert;
         Update: CategoryUpdate;
+      };
+      banners: {
+        Row: Banner;
+        Insert: BannerInsert;
+        Update: BannerUpdate;
       };
       products: {
         Row: Product;
