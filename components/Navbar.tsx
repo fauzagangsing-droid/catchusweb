@@ -1,8 +1,14 @@
 "use client";
 
 import { useMobileMenu } from "@/hooks/useMobileMenu";
+import ProductSearch from "@/components/ProductSearch";
 
-export default function Navbar() {
+interface NavbarProps {
+  brandName: string;
+  logoUrl?: string | null;
+}
+
+export default function Navbar({ brandName, logoUrl }: NavbarProps) {
   const { menuActive, toggleMenu } = useMobileMenu();
 
   return (
@@ -10,8 +16,16 @@ export default function Navbar() {
       <div className="container">
         <div className="navbar-box">
           <div className="logo">
-            <h1>Catchus</h1>
+            {logoUrl ? (
+              // Admin-configured logos may use any trusted public host, which
+              // cannot be known ahead of time for next/image allow-listing.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={brandName} />
+            ) : (
+              <h1>{brandName}</h1>
+            )}
           </div>
+          <ProductSearch />
           <ul className={`menu${menuActive ? " menu-active" : ""}`}>
             <li>
               <a href="#beranda">Beranda</a>

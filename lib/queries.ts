@@ -1,6 +1,10 @@
 import "server-only";
 import { supabase } from "@/lib/supabase";
 import type { Category, ProductWithRelations } from "@/types/database";
+import {
+  getWebsiteSettings as queryWebsiteSettings,
+  type WebsiteSettingsResult,
+} from "@/lib/website-settings";
 
 export interface QueryResult<T> {
   data: T | null;
@@ -44,6 +48,10 @@ export async function getProducts(): Promise<QueryResult<ProductWithRelations[]>
   }
 
   return { data: data ?? [], error: null };
+}
+
+export async function getWebsiteSettings(): Promise<WebsiteSettingsResult> {
+  return queryWebsiteSettings(supabase);
 }
 
 /** One public, active product for the storefront detail route. */

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import AosInit from "@/components/AosInit";
+import { getWebsiteSettings } from "@/lib/queries";
+import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 
 // Original site loaded Poppins 400/500/600/700 from Google Fonts via <link> tags.
 // next/font/google fetches + self-hosts the same weights with zero visual difference
@@ -13,12 +15,15 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-export const metadata: Metadata = {
-  title: "Catchus Official",
-  icons: {
-    icon: "/icons/nm.png",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const result = await getWebsiteSettings();
+  const settings = result.data ?? DEFAULT_WEBSITE_SETTINGS;
+  return {
+    title: settings.website_title,
+    description: settings.website_description,
+    icons: settings.favicon_url ? { icon: settings.favicon_url } : undefined,
+  };
+}
 
 export default function RootLayout({
   children,

@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import Footer from "@/components/Footer";
 import ProductGallery from "@/components/ProductGallery";
 import { formatRupiah } from "@/lib/adapters";
-import { getProductBySlug, getRelatedProducts } from "@/lib/queries";
+import { getProductBySlug, getRelatedProducts, getWebsiteSettings } from "@/lib/queries";
+import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 import styles from "./product-detail.module.css";
 
 export const dynamic = "force-dynamic";
@@ -15,17 +16,27 @@ interface ProductDetailPageProps {
 }
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
-  const { data: product } = await getProductBySlug(params.slug);
-  if (!product) return { title: "Product Not Found | Catchus" };
+  const [productResult, settingsResult] = await Promise.all([
+    getProductBySlug(params.slug),
+    getWebsiteSettings(),
+  ]);
+  const product = productResult.data;
+  const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
+  if (!product) return { title: `Product Not Found | ${settings.brand_name}` };
 
   return {
-    title: `${product.name} | Catchus`,
+    title: `${product.name} | ${settings.brand_name}`,
     description: product.short_description ?? product.description ?? undefined,
   };
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const { data: product, error } = await getProductBySlug(params.slug);
+  const [productResult, settingsResult] = await Promise.all([
+    getProductBySlug(params.slug),
+    getWebsiteSettings(),
+  ]);
+  const { data: product, error } = productResult;
+  const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
   if (error) throw new Error(`Unable to load product: ${error}`);
   if (!product) notFound();
 
@@ -46,7 +57,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={`container ${styles.headerInner}`}>
-          <Link href="/" className={styles.brand}>Catchus</Link>
+          <Link href="/" className={styles.brand}>{settings.brand_name}</Link>
           <Link href="/#produk" className={styles.backLink}>
             <i className="ri-arrow-left-line" />
             Back to Products
@@ -177,7 +188,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         )}
       </main>
 
-      <Footer />
+      <Footer settings={settings} />
     </div>
   );
 }

@@ -73,7 +73,21 @@ body {
     z-index: 999999;
 }
 
+@media (max-width: 900px){
+    .navbar-box {
+        flex-wrap: wrap;
+    }
+}
+
+.navbar-box .logo img {
+    display: block;
+    max-width: 150px;
+    max-height: 48px;
+    object-fit: contain;
+}
+
 @media (max-width: 768px){
+
     .navbar-box .ri-menu-3-line {
         display: block;
     }

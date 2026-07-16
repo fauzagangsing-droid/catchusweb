@@ -26,6 +26,35 @@ create table if not exists public.categories (
 comment on table public.categories is 'Top-level product categories (sweater, t-shirt, beanie, ...).';
 
 -- ============================================================================
+-- TABLE: website_settings (singleton row, id = 1)
+-- ============================================================================
+create table if not exists public.website_settings (
+  id                  smallint primary key default 1,
+  brand_name          text not null default 'Catchus',
+  website_title       text not null default 'Catchus Official',
+  website_description text not null default 'Catchus menghadirkan koleksi apparel dengan desain khas dan kualitas terbaik.',
+  logo_url            text,
+  favicon_url         text default '/icons/nm.png',
+  hero_title          text not null default 'Catchus Katalog',
+  hero_subtitle       text not null default 'Catchus menghadirkan koleksi apparel dengan desain khas dan kualitas terbaik.',
+  hero_button_text    text not null default 'Detail Produk',
+  hero_button_url     text not null default '#produk',
+  whatsapp            text,
+  email               text,
+  instagram_url       text,
+  tiktok_url          text,
+  facebook_url        text,
+  shopee_url          text,
+  tokopedia_url       text,
+  tiktok_shop_url     text,
+  copyright_text      text not null default '© Copyrights 2024 by Catchus Official',
+  updated_at          timestamptz not null default now(),
+  constraint website_settings_singleton check (id = 1)
+);
+
+comment on table public.website_settings is 'Singleton global storefront settings record. Only id = 1 is allowed.';
+
+-- ============================================================================
 -- TABLE: products
 -- ============================================================================
 create table if not exists public.products (
@@ -79,6 +108,12 @@ create trigger trg_products_set_updated_at
   for each row
   execute function public.set_updated_at();
 
+drop trigger if exists trg_website_settings_set_updated_at on public.website_settings;
+create trigger trg_website_settings_set_updated_at
+  before update on public.website_settings
+  for each row
+  execute function public.set_updated_at();
+
 -- ============================================================================
 -- TABLE: product_images
 -- ============================================================================
@@ -115,6 +150,26 @@ create unique index if not exists uq_one_thumbnail_per_product
 alter table public.categories enable row level security;
 alter table public.products enable row level security;
 alter table public.product_images enable row level security;
+alter table public.website_settings enable row level security;
+
+drop policy if exists "Public read website settings" on public.website_settings;
+create policy "Public read website settings"
+  on public.website_settings for select
+  to anon, authenticated
+  using (id = 1);
+
+drop policy if exists "Authenticated insert website settings" on public.website_settings;
+create policy "Authenticated insert website settings"
+  on public.website_settings for insert
+  to authenticated
+  with check (id = 1);
+
+drop policy if exists "Authenticated update website settings" on public.website_settings;
+create policy "Authenticated update website settings"
+  on public.website_settings for update
+  to authenticated
+  using (id = 1)
+  with check (id = 1);
 
 drop policy if exists "Public read categories" on public.categories;
 create policy "Public read categories"

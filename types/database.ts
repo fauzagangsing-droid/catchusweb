@@ -15,6 +15,36 @@ export type Category = {
   created_at: string;
 };
 
+export type WebsiteSettings = {
+  id: number;
+  brand_name: string;
+  website_title: string;
+  website_description: string;
+  logo_url: string | null;
+  favicon_url: string | null;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_button_text: string;
+  hero_button_url: string;
+  whatsapp: string | null;
+  email: string | null;
+  instagram_url: string | null;
+  tiktok_url: string | null;
+  facebook_url: string | null;
+  shopee_url: string | null;
+  tokopedia_url: string | null;
+  tiktok_shop_url: string | null;
+  copyright_text: string;
+  updated_at: string;
+};
+
+export type WebsiteSettingsInsert = Partial<Omit<WebsiteSettings, "id" | "updated_at">> & {
+  id?: number;
+  updated_at?: string;
+};
+
+export type WebsiteSettingsUpdate = Partial<Omit<WebsiteSettingsInsert, "id">>;
+
 export type Banner = {
   id: string;
   title: string;
@@ -182,6 +212,12 @@ export interface Database {
         Row: Category;
         Insert: CategoryInsert;
         Update: CategoryUpdate;
+        Relationships: [];
+      };
+      website_settings: {
+        Row: WebsiteSettings;
+        Insert: WebsiteSettingsInsert;
+        Update: WebsiteSettingsUpdate;
         Relationships: [];
       };
       banners: {

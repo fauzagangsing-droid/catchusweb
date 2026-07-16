@@ -1,0 +1,33 @@
+.shell { display: flex; min-height: 100vh; background-color: #f1f1f1; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.content { width: 100%; max-width: 1050px; margin-inline: auto; padding: 28px 32px 60px; }
+.form { display: flex; flex-direction: column; gap: 20px; }
+.card { overflow: hidden; border-radius: 16px; background-color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,.05); }
+.cardHeader { padding: 18px 22px; border-bottom: 1px solid #f0f0f0; background-color: #fafafa; }
+.cardHeader > div { display: flex; align-items: center; gap: 9px; }
+.cardHeader i { font-size: 18px; color: #333; }
+.cardHeader h2 { color: #111; font-size: 15px; }
+.cardHeader p { margin-top: 4px; color: #888; font-size: 12px; }
+.cardBody { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.field { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.field label { color: #111; font-size: 13px; font-weight: 600; }
+.field input, .field textarea { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e2e2; border-radius: 8px; background-color: #fff; color: #111; font: inherit; font-size: 13.5px; outline: none; transition: border-color .2s ease, box-shadow .2s ease; }
+.field textarea { resize: vertical; line-height: 1.55; }
+.field input:focus, .field textarea:focus { border-color: #000; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+.field input[aria-invalid="true"], .field textarea[aria-invalid="true"] { border-color: #e63946; }
+.fieldError { color: #b3222f; font-size: 12px; }
+.hint { color: #999; font-size: 11.5px; }
+.banner { margin-bottom: 20px; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.error { border: 1px solid #f3c4c9; background-color: #fdecee; color: #b3222f; }
+.success { border: 1px solid #bde8c8; background-color: #e5f7ea; color: #1a7a34; }
+.loading { min-height: 220px; border-radius: 16px; background-color: #fff; color: #777; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(0,0,0,.05); font-size: 14px; }
+.spinner, .buttonSpinner { border-radius: 50%; animation: spin .7s linear infinite; }
+.spinner { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #000; }
+.actions { position: sticky; bottom: 0; padding: 16px 0 0; display: flex; justify-content: flex-end; background: linear-gradient(transparent, #f1f1f1 32%); }
+.actions button { min-width: 150px; padding: 12px 20px; border: none; border-radius: 8px; background-color: #000; color: #fff; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.actions button:disabled { opacity: .65; cursor: not-allowed; }
+.buttonSpinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 900px) { .content { padding: 22px 20px 50px; } }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .cardBody { padding: 18px; } .actions button { width: 100%; } }
