@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import AosInit from "@/components/AosInit";
 import { getWebsiteSettings } from "@/lib/queries";
+import { getSiteUrl } from "@/lib/seo";
 import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 
 // Original site loaded Poppins 400/500/600/700 from Google Fonts via <link> tags.
@@ -19,8 +20,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const result = await getWebsiteSettings();
   const settings = result.data ?? DEFAULT_WEBSITE_SETTINGS;
   return {
+    metadataBase: new URL(getSiteUrl()),
     title: settings.website_title,
     description: settings.website_description,
+    applicationName: settings.brand_name,
     icons: settings.favicon_url ? { icon: settings.favicon_url } : undefined,
   };
 }
@@ -31,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="id">
       <head>
         {/* Remix Icon - kept as CDN link, exactly as in the original site */}
         <link

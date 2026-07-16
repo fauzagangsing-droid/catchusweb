@@ -20,9 +20,9 @@ export default function Navbar({ brandName, logoUrl }: NavbarProps) {
               // Admin-configured logos may use any trusted public host, which
               // cannot be known ahead of time for next/image allow-listing.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={brandName} />
+              <img src={logoUrl} alt={`${brandName} official logo`} />
             ) : (
-              <h1>{brandName}</h1>
+              <span className="brand-name">{brandName}</span>
             )}
           </div>
           <ProductSearch />

@@ -25,7 +25,7 @@ export default function ProductGallery({ images, productName }: ProductGalleryPr
       <div className={styles.mainImage}>
         <Image
           src={selectedImage.image_url}
-          alt={productName}
+          alt={`${productName} main product image`}
           fill
           priority
           sizes="(max-width: 900px) 100vw, 52vw"
@@ -46,7 +46,7 @@ export default function ProductGallery({ images, productName }: ProductGalleryPr
             >
               <Image
                 src={image.image_url}
-                alt=""
+                alt={`${productName} gallery image ${index + 1}`}
                 fill
                 sizes="84px"
                 className={styles.thumbnailImage}

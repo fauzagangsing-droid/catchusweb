@@ -19,7 +19,7 @@ export default function Hero({ title, subtitle, buttonText, buttonUrl }: HeroPro
             <a href={buttonUrl}>{buttonText}</a>
           </div>
           <div className="class-box" data-aos="fade-left" data-aos-duration="1000">
-            <img src="/images/catchus.PNG" alt="Hero Image" />
+            <img src="/images/catchus.PNG" alt={`${title} apparel collection`} />
           </div>
         </div>
       </div>

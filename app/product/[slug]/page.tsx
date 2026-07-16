@@ -3,9 +3,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
 import ProductGallery from "@/components/ProductGallery";
 import { formatRupiah } from "@/lib/adapters";
 import { getProductBySlug, getRelatedProducts, getWebsiteSettings } from "@/lib/queries";
+import {
+  buildBreadcrumbJsonLd,
+  buildProductJsonLd,
+  buildPublicMetadata,
+  getProductThumbnail,
+} from "@/lib/seo";
 import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 import styles from "./product-detail.module.css";
 
@@ -22,12 +29,33 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   ]);
   const product = productResult.data;
   const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
-  if (!product) return { title: `Product Not Found | ${settings.brand_name}` };
+  if (!product) {
+    return {
+      title: `Product Not Found | ${settings.brand_name}`,
+      robots: { index: false, follow: false },
+    };
+  }
 
-  return {
+  const description = (
+    product.short_description ??
+    product.description ??
+    `${product.name} dari ${settings.brand_name}.`
+  ).slice(0, 160);
+
+  return buildPublicMetadata({
     title: `${product.name} | ${settings.brand_name}`,
-    description: product.short_description ?? product.description ?? undefined,
-  };
+    description,
+    keywords: [
+      product.name,
+      product.brand ?? settings.brand_name,
+      product.category?.name ?? "apparel",
+      product.sku ?? "",
+      "fashion Indonesia",
+    ],
+    settings,
+    pathname: `/product/${product.slug}`,
+    image: getProductThumbnail(product),
+  });
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
@@ -53,8 +81,17 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     Boolean(marketplace.url)
   );
 
+  const productJsonLd = buildProductJsonLd(product, settings);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", pathname: "/" },
+    { name: "Products", pathname: "/#produk" },
+    { name: product.name, pathname: `/product/${product.slug}` },
+  ]);
+
   return (
     <div className={styles.page}>
+      <JsonLd data={productJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <header className={styles.header}>
         <div className={`container ${styles.headerInner}`}>
           <Link href="/" className={styles.brand}>{settings.brand_name}</Link>
@@ -170,7 +207,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                     <div className={styles.relatedImage}>
                       <Image
                         src={thumbnail?.image_url ?? "/images/catchus.PNG"}
-                        alt={relatedProduct.name}
+                        alt={`${relatedProduct.name} product thumbnail`}
                         fill
                         sizes="(max-width: 640px) 50vw, 260px"
                       />

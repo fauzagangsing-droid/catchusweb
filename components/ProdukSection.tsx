@@ -25,7 +25,7 @@ export default function ProdukSection({
     <div className="produk" id="produk">
       <div className="container">
         <div className="produk-box" data-aos="fade-down" data-aos-duration="1000">
-          <h1>Produk Kami</h1>
+          <h2>Produk Kami</h2>
 
           {errorMessage ? (
             <p>Produk sedang tidak dapat dimuat. Silakan coba lagi nanti.</p>
