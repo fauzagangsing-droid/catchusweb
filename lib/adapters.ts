@@ -1,7 +1,7 @@
 import type { ProductWithRelations } from "@/types/database";
 import type { Product as UiProduct } from "@/types/product";
 
-function formatRupiah(amount: number): string {
+export function formatRupiah(amount: number): string {
   return `Rp ${Math.round(amount).toLocaleString("id-ID")}`;
 }
 

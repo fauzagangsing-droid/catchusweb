@@ -28,7 +28,7 @@ const MENU_ITEMS: MenuItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "ri-dashboard-line" },
   { label: "Products", href: "/admin/products", icon: "ri-shopping-bag-3-line" },
   { label: "Categories", href: "/admin/categories", icon: "ri-price-tag-3-line" },
-  { label: "Banners", href: "/admin/banners", icon: "ri-image-2-line" },
+  { label: "Banners", href: "/admin/banners", icon: "ri-image-2-line", comingSoon: true },
   { label: "Orders", href: "/admin/orders", icon: "ri-shopping-cart-2-line", comingSoon: true },
   { label: "Settings", href: "/admin/settings", icon: "ri-settings-3-line" },
 ];
