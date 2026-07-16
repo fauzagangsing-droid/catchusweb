@@ -5,11 +5,13 @@ export type ProductCategory = string;
 
 export interface Product {
   id: string;
+  slug: string;
   filter: ProductCategory;
   image: string;
   alt: string;
   badge: string;
   title: string;
+  shortDescription: string;
   priceOld: string;
   priceNew: string;
   buyUrl: string;

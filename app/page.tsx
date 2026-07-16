@@ -7,6 +7,10 @@ import Footer from "@/components/Footer";
 import { getCategories, getProducts } from "@/lib/queries";
 import { toUiProduct } from "@/lib/adapters";
 
+// Product CRUD happens directly in Supabase. Always render the storefront
+// catalog from the current database state instead of a build-time snapshot.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [categoriesResult, productsResult] = await Promise.all([
     getCategories(),

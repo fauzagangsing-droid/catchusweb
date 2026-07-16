@@ -57,6 +57,7 @@ export type Product = {
   id: string;
   slug: string;
   name: string;
+  short_description: string | null;
   description: string | null;
   brand: string | null;
   sku: string | null;
@@ -104,6 +105,7 @@ export type ProductInsert = {
   id?: string;
   slug: string;
   name: string;
+  short_description?: string | null;
   description?: string | null;
   brand?: string | null;
   sku?: string | null;

@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type MouseEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import {
   ALLOWED_IMAGE_EXTENSIONS,
   MAX_IMAGE_SIZE_BYTES,
@@ -11,20 +18,18 @@ import {
   validateImageFile,
   type CancellableUpload,
 } from "@/lib/storage";
-import type { ProductImageFieldValue } from "@/lib/admin-products";
+import type { ProductImagesFieldValue, RemovedProductImage } from "@/lib/admin-products";
+import type { ProductImage } from "@/types/database";
 import styles from "./ImageUploader.module.css";
 
+const MAX_PRODUCT_IMAGES = 8;
+
 export interface ImageUploaderProps {
-  /** Client-generated id for a new product, or the existing product's id when editing. */
   productId: string;
-  /** The product's currently saved image, if any (Edit mode with an existing image). */
-  initialImage: { id: string; url: string } | null;
-  /** True while the parent form is submitting — disables all interaction. */
+  initialImages: ProductImage[];
   disabled?: boolean;
   storage?: ImageUploaderStorage;
-  label?: string;
-  imageAlt?: string;
-  onChange: (value: ImageUploaderResolvedValue) => void;
+  onChange: (value: ProductImagesFieldValue) => void;
 }
 
 export interface ImageUploaderStorage {
@@ -39,287 +44,307 @@ const productImageStorage: ImageUploaderStorage = {
   getPathFromPublicUrl: getImagePathFromPublicUrl,
 };
 
-export interface ImageUploaderResolvedValue extends ProductImageFieldValue {
-  uploading: boolean;
-}
+type ManagedImage = {
+  clientId: string;
+  id: string | null;
+  url: string;
+  storagePath: string | null;
+  isThumbnail: boolean;
+  isNew: boolean;
+  status: "ready" | "uploading" | "error";
+  progress: number;
+  error: string | null;
+};
 
-type ImageSource =
-  | { kind: "none" }
-  | { kind: "existing"; url: string }
-  | { kind: "uploading"; localUrl: string }
-  | { kind: "uploaded"; url: string; path: string };
-
-function resolveValue(
-  productId: string,
-  initialImage: { id: string; url: string } | null,
-  source: ImageSource
-): ImageUploaderResolvedValue {
-  const imageId = initialImage?.id ?? null;
-
-  if (source.kind === "uploading") {
-    return { productId, imageId, imageUrl: null, storagePathToDeleteOnSave: null, uploading: true };
-  }
-  if (source.kind === "existing") {
-    return { productId, imageId, imageUrl: source.url, storagePathToDeleteOnSave: null, uploading: false };
-  }
-  if (source.kind === "uploaded") {
-    const previousPath = initialImage ? getImagePathFromPublicUrl(initialImage.url) : null;
-    return { productId, imageId, imageUrl: source.url, storagePathToDeleteOnSave: previousPath, uploading: false };
-  }
-  // "none" — image was removed
-  const previousPath = initialImage ? getImagePathFromPublicUrl(initialImage.url) : null;
-  return { productId, imageId, imageUrl: null, storagePathToDeleteOnSave: previousPath, uploading: false };
+function makeInitialImages(images: ProductImage[]): ManagedImage[] {
+  const hasThumbnail = images.some((image) => image.is_thumbnail);
+  return images.map((image, index) => ({
+    clientId: image.id,
+    id: image.id,
+    url: image.image_url,
+    storagePath: null,
+    isThumbnail: hasThumbnail ? image.is_thumbnail : index === 0,
+    isNew: false,
+    status: "ready",
+    progress: 100,
+    error: null,
+  }));
 }
 
 export default function ImageUploader({
   productId,
-  initialImage,
+  initialImages,
   disabled,
   storage = productImageStorage,
-  label = "Product Image",
-  imageAlt = "Product preview",
   onChange,
 }: ImageUploaderProps) {
-  const [source, setSource] = useState<ImageSource>(
-    initialImage ? { kind: "existing", url: initialImage.url } : { kind: "none" }
-  );
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [justSucceeded, setJustSucceeded] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cancelRef = useRef<(() => void) | null>(null);
-  const sourceRef = useRef(source);
+  const [images, setImages] = useState<ManagedImage[]>(() => makeInitialImages(initialImages));
+  const [removedImages, setRemovedImages] = useState<RemovedProductImage[]>([]);
+  const [dropActive, setDropActive] = useState(false);
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const uploadsRef = useRef(new Map<string, CancellableUpload>());
+  const imagesRef = useRef(images);
   const disabledRef = useRef(disabled);
 
   useEffect(() => {
-    sourceRef.current = source;
-  }, [source]);
+    imagesRef.current = images;
+  }, [images]);
 
   useEffect(() => {
     disabledRef.current = disabled;
   }, [disabled]);
 
-  // Purge an uploaded-but-never-saved file if this component unmounts
-  // (modal closed/cancelled) while `disabled` (submitting) is false — i.e.
-  // the parent never actually persisted this upload. `disabledRef` reflects
-  // the last real render, so a successful save (which keeps `disabled` true
-  // right up to unmount) is never mistaken for a cancel.
+  const resolvedValue = useMemo<ProductImagesFieldValue>(
+    () => ({
+      productId,
+      images: images
+        .filter((image) => image.status === "ready")
+        .map((image) => ({
+          id: image.id,
+          imageUrl: image.url,
+          isThumbnail: image.isThumbnail,
+          storagePath: image.storagePath,
+        })),
+      removedImages,
+      uploading: images.some((image) => image.status === "uploading"),
+    }),
+    [images, productId, removedImages]
+  );
+
   useEffect(() => {
+    onChange(resolvedValue);
+  }, [onChange, resolvedValue]);
+
+  useEffect(() => {
+    const activeUploads = uploadsRef.current;
     return () => {
+      activeUploads.forEach((upload) => upload.cancel());
       if (disabledRef.current) return;
-      const current = sourceRef.current;
-      if (current.kind === "uploading") {
-        cancelRef.current?.();
-      } else if (current.kind === "uploaded") {
-        void deleteStorageImage(current.path);
-      }
+      imagesRef.current.forEach((image) => {
+        if (image.isNew && image.storagePath) void storage.remove(image.storagePath);
+      });
     };
-  }, []);
+  }, [storage]);
 
-  const emit = (next: ImageSource) => {
-    setSource(next);
-    onChange(resolveValue(productId, initialImage, next));
-  };
-
-  const handleFile = (file: File) => {
+  const uploadFiles = (fileList: FileList | File[]) => {
     if (disabled) return;
 
-    const validationError = validateImageFile(file);
-    if (validationError) {
-      setError(validationError);
+    const files = Array.from(fileList);
+    const availableSlots = MAX_PRODUCT_IMAGES - images.length;
+    if (availableSlots <= 0) {
+      setGeneralError(`You can upload up to ${MAX_PRODUCT_IMAGES} product images.`);
       return;
     }
 
-    setError(null);
-    setJustSucceeded(false);
-    setProgress(0);
-
-    // Replacing an upload from *this session* that was never saved — safe to delete immediately.
-    if (source.kind === "uploaded") {
-      void deleteStorageImage(source.path);
+    const selected = files.slice(0, availableSlots);
+    const invalid = selected.find((file) => validateImageFile(file));
+    if (invalid) {
+      setGeneralError(`${invalid.name}: ${validateImageFile(invalid)}`);
+      return;
+    }
+    if (files.length > availableSlots) {
+      setGeneralError(`Only ${availableSlots} more image${availableSlots === 1 ? "" : "s"} can be added.`);
+    } else {
+      setGeneralError(null);
     }
 
-    const previousSettled = source;
-    const localUrl = URL.createObjectURL(file);
-    emit({ kind: "uploading", localUrl });
+    selected.forEach((file) => {
+      const clientId = crypto.randomUUID();
+      const localUrl = URL.createObjectURL(file);
+      const item: ManagedImage = {
+        clientId,
+        id: null,
+        url: localUrl,
+        storagePath: null,
+        isThumbnail: images.length === 0,
+        isNew: true,
+        status: "uploading",
+        progress: 0,
+        error: null,
+      };
 
-    const upload: CancellableUpload = uploadProductImage(productId, file, setProgress);
-    cancelRef.current = upload.cancel;
+      setImages((current) => [
+        ...current,
+        { ...item, isThumbnail: !current.some((image) => image.isThumbnail) },
+      ]);
 
-    upload.promise
-      .then((result) => {
-        URL.revokeObjectURL(localUrl);
-        emit({ kind: "uploaded", url: result.publicUrl, path: result.path });
-        setJustSucceeded(true);
-        window.setTimeout(() => setJustSucceeded(false), 1600);
-      })
-      .catch((err: unknown) => {
-        URL.revokeObjectURL(localUrl);
-        setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-        emit(previousSettled);
+      const upload = storage.upload(productId, file, (progress) => {
+        setImages((current) =>
+          current.map((image) => (image.clientId === clientId ? { ...image, progress } : image))
+        );
       });
+      uploadsRef.current.set(clientId, upload);
+
+      upload.promise
+        .then(({ path, publicUrl }) => {
+          URL.revokeObjectURL(localUrl);
+          uploadsRef.current.delete(clientId);
+          setImages((current) => {
+            const next = current.map((image) =>
+              image.clientId === clientId
+                ? { ...image, url: publicUrl, storagePath: path, status: "ready" as const, progress: 100 }
+                : image
+            );
+            if (!next.some((image) => image.isThumbnail && image.status === "ready")) {
+              return next.map((image) =>
+                image.clientId === clientId ? { ...image, isThumbnail: true } : image
+              );
+            }
+            return next;
+          });
+        })
+        .catch((error: unknown) => {
+          URL.revokeObjectURL(localUrl);
+          uploadsRef.current.delete(clientId);
+          setGeneralError(error instanceof Error ? error.message : "Upload failed. Please try again.");
+          setImages((current) => {
+            const failed = current.find((image) => image.clientId === clientId);
+            const next = current.filter((image) => image.clientId !== clientId);
+            if (failed?.isThumbnail && next.length > 0 && !next.some((image) => image.isThumbnail)) {
+              return next.map((image, index) => ({ ...image, isThumbnail: index === 0 }));
+            }
+            return next;
+          });
+        });
+    });
   };
 
-  const openFilePicker = () => {
-    if (disabled || source.kind === "uploading") return;
-    fileInputRef.current?.click();
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) uploadFiles(event.target.files);
+    event.target.value = "";
   };
 
-  const onInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = ""; // allow re-selecting the same file later
-    if (file) handleFile(file);
-  };
-
-  const onDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setDragActive(false);
-    if (disabled || source.kind === "uploading") return;
-    const file = event.dataTransfer.files?.[0];
-    if (file) handleFile(file);
-  };
-
-  const onDragOver = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    if (disabled || source.kind === "uploading") return;
-    setDragActive(true);
-  };
-
-  const onDragLeave = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setDragActive(false);
-  };
-
-  const handleRemove = (event: MouseEvent) => {
-    event.stopPropagation();
+  const removeImage = (image: ManagedImage) => {
     if (disabled) return;
 
-    if (source.kind === "uploading") {
-      cancelRef.current?.();
-      return; // the rejected promise's .catch handles reverting state
+    if (image.status === "uploading") uploadsRef.current.get(image.clientId)?.cancel();
+    if (image.isNew && image.storagePath) void storage.remove(image.storagePath);
+    if (!image.isNew && image.id) {
+      setRemovedImages((current) => [
+        ...current,
+        { id: image.id as string, storagePath: storage.getPathFromPublicUrl(image.url) },
+      ]);
     }
-    if (source.kind === "uploaded") {
-      void deleteStorageImage(source.path); // never saved — safe to purge now
-    }
-    setError(null);
-    emit({ kind: "none" });
+
+    setImages((current) => {
+      const next = current.filter((item) => item.clientId !== image.clientId);
+      if (image.isThumbnail && next.length > 0) {
+        const firstReady = next.find((item) => item.status === "ready") ?? next[0];
+        return next.map((item) => ({ ...item, isThumbnail: item.clientId === firstReady.clientId }));
+      }
+      return next;
+    });
   };
 
-  const previewUrl =
-    source.kind === "uploading" ? source.localUrl : source.kind === "existing" || source.kind === "uploaded" ? source.url : null;
+  const setThumbnail = (clientId: string) => {
+    setImages((current) =>
+      current.map((image) => ({ ...image, isThumbnail: image.clientId === clientId }))
+    );
+  };
 
-  const isUploading = source.kind === "uploading";
-  const isDisabled = Boolean(disabled);
+  const uploading = images.some((image) => image.status === "uploading");
+  const canAdd = images.length < MAX_PRODUCT_IMAGES && !disabled;
 
   return (
     <div className={styles.field}>
-      <label className={styles.label}>Product Image</label>
-
-      <div
-        className={[
-          styles.dropzone,
-          dragActive ? styles.dragActive : "",
-          error ? styles.hasError : "",
-          isDisabled ? styles.disabled : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        onClick={openFilePicker}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openFilePicker();
-          }
-        }}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        role="button"
-        tabIndex={0}
-        aria-label={previewUrl ? "Replace product image" : "Upload product image"}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ALLOWED_IMAGE_EXTENSIONS.map((ext) => `.${ext}`).join(",")}
-          className={styles.hiddenInput}
-          onChange={onInputChange}
-          disabled={isDisabled}
-        />
-
-        {previewUrl ? (
-          <div className={styles.previewWrap}>
-            <Image
-              src={previewUrl}
-              alt={imageAlt}
-              fill
-              unoptimized
-              sizes="(max-width: 640px) 100vw, 320px"
-              className={styles.previewImg}
-            />
-
-            {justSucceeded && (
-              <span className={`${styles.statusBadge} ${styles.statusSuccess}`}>
-                <i className="ri-checkbox-circle-fill" /> Uploaded
-              </span>
-            )}
-
-            {isUploading && (
-              <div className={styles.uploadingOverlay}>
-                <span className={styles.spinner} aria-hidden="true" />
-                <div className={styles.progressTrack}>
-                  <div className={styles.progressFill} style={{ width: `${progress}%` }} />
-                </div>
-                <span className={styles.progressLabel}>Uploading… {progress}%</span>
-              </div>
-            )}
-
-            {!isUploading && (
-              <div className={styles.previewOverlay}>
-                <button
-                  type="button"
-                  className={`${styles.overlayBtn} ${styles.replaceBtn}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openFilePicker();
-                  }}
-                  disabled={isDisabled}
-                >
-                  <i className="ri-refresh-line" /> Replace
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.overlayBtn} ${styles.removeBtn}`}
-                  onClick={handleRemove}
-                  disabled={isDisabled}
-                >
-                  <i className="ri-delete-bin-line" /> Remove
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={styles.emptyState}>
-            <i className={`ri-upload-cloud-2-line ${styles.emptyIcon}`} />
-            <span className={styles.emptyTitle}>Drag & drop an image, or click to upload</span>
-            <span className={styles.emptyHint}>JPG, JPEG, PNG or WEBP — up to 5 MB</span>
-          </div>
-        )}
+      <div className={styles.labelRow}>
+        <div>
+          <span className={styles.label}>Product Images</span>
+          <span className={styles.hint}>Choose one thumbnail and add up to {MAX_PRODUCT_IMAGES - 1} gallery images.</span>
+        </div>
+        <span className={styles.counter}>{images.length}/{MAX_PRODUCT_IMAGES}</span>
       </div>
 
-      {error && (
-        <span className={styles.fieldError}>
-          <i className="ri-error-warning-line" /> {error}
-        </span>
+      <div
+        className={`${styles.dropzone} ${dropActive ? styles.dragActive : ""} ${!canAdd ? styles.disabled : ""}`}
+        onClick={() => canAdd && inputRef.current?.click()}
+        onKeyDown={(event) => {
+          if ((event.key === "Enter" || event.key === " ") && canAdd) inputRef.current?.click();
+        }}
+        onDragOver={(event: DragEvent<HTMLDivElement>) => {
+          event.preventDefault();
+          if (canAdd) setDropActive(true);
+        }}
+        onDragLeave={() => setDropActive(false)}
+        onDrop={(event: DragEvent<HTMLDivElement>) => {
+          event.preventDefault();
+          setDropActive(false);
+          if (canAdd) uploadFiles(event.dataTransfer.files);
+        }}
+        role="button"
+        tabIndex={canAdd ? 0 : -1}
+        aria-disabled={!canAdd}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept={ALLOWED_IMAGE_EXTENSIONS.map((extension) => `.${extension}`).join(",")}
+          className={styles.hiddenInput}
+          onChange={handleInputChange}
+          disabled={!canAdd}
+        />
+        <i className={`ri-upload-cloud-2-line ${styles.emptyIcon}`} />
+        <span className={styles.emptyTitle}>Drag images here, or click to browse</span>
+        <span className={styles.emptyHint}>JPG, JPEG, PNG or WEBP · max 5 MB each</span>
+      </div>
+
+      {generalError && <span className={styles.fieldError}>{generalError}</span>}
+
+      {images.length > 0 && (
+        <div className={styles.gallery}>
+          {images.map((image) => (
+            <div key={image.clientId} className={styles.imageCard}>
+              <div className={styles.previewWrap}>
+                <Image
+                  src={image.url}
+                  alt="Product gallery preview"
+                  fill
+                  unoptimized
+                  sizes="(max-width: 640px) 50vw, 180px"
+                  className={styles.previewImg}
+                />
+                {image.status === "uploading" && (
+                  <div className={styles.uploadingOverlay}>
+                    <span className={styles.spinner} />
+                    <span>{image.progress}%</span>
+                  </div>
+                )}
+                {image.isThumbnail && image.status === "ready" && (
+                  <span className={styles.thumbnailBadge}>Thumbnail</span>
+                )}
+                <button
+                  type="button"
+                  className={styles.removeBtn}
+                  onClick={() => removeImage(image)}
+                  disabled={disabled}
+                  aria-label="Remove image"
+                >
+                  <i className="ri-close-line" />
+                </button>
+              </div>
+              {image.status === "error" ? (
+                <span className={styles.imageError}>{image.error}</span>
+              ) : (
+                <button
+                  type="button"
+                  className={`${styles.thumbnailBtn} ${image.isThumbnail ? styles.thumbnailBtnActive : ""}`}
+                  onClick={() => setThumbnail(image.clientId)}
+                  disabled={disabled || image.status !== "ready"}
+                >
+                  <i className={image.isThumbnail ? "ri-star-fill" : "ri-star-line"} />
+                  {image.isThumbnail ? "Main image" : "Set as thumbnail"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       )}
-      {!error && (
-        <span className={styles.hint}>
-          Max {Math.round(MAX_IMAGE_SIZE_BYTES / (1024 * 1024))} MB. Accepted:{" "}
-          {ALLOWED_IMAGE_EXTENSIONS.join(", ")}.
-        </span>
-      )}
+
+      <span className={styles.hint}>
+        {uploading ? "Wait for all uploads to finish before saving." : `Accepted: ${ALLOWED_IMAGE_EXTENSIONS.join(", ")}. Max ${Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)} MB per image.`}
+      </span>
     </div>
   );
 }

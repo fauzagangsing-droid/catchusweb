@@ -258,26 +258,45 @@ export function slugify(input: string): string {
  * app/admin/products/page.tsx can save/replace/remove the product_images
  * row and purge Supabase Storage after the product itself is saved.
  */
-export interface ProductImageFieldValue {
-  /** Client-generated id used as the product's id when creating (Add mode), or the existing product's id (Edit mode). */
+export interface ProductImageFormItem {
+  id: string | null;
+  imageUrl: string;
+  isThumbnail: boolean;
+  /** Present only for files uploaded during this form session. */
+  storagePath: string | null;
+}
+
+export interface RemovedProductImage {
+  id: string;
+  storagePath: string | null;
+}
+
+export interface ProductImagesFieldValue {
+  /** Existing id in Edit mode or a client-generated id in Add mode. */
   productId: string;
-  /** Final image URL to persist, or null if the product should end up with no image. */
-  imageUrl: string | null;
-  /** Existing product_images.id to update, or null to insert a new row. */
-  imageId: string | null;
-  /** Storage path of an old/replaced image to delete once the save succeeds, or null. */
-  storagePathToDeleteOnSave: string | null;
+  images: ProductImageFormItem[];
+  removedImages: RemovedProductImage[];
+  uploading: boolean;
 }
 
 export interface ProductFormValues {
   name: string;
   slug: string;
+  brand: string;
+  sku: string;
   price: string;
+  comparePrice: string;
   categoryId: string;
+  stock: string;
+  weight: string;
+  status: ProductStatus;
+  shortDescription: string;
   description: string;
   featured: boolean;
-  active: boolean;
-  image: ProductImageFieldValue;
+  shopeeUrl: string;
+  tokopediaUrl: string;
+  tiktokUrl: string;
+  images: ProductImagesFieldValue;
 }
 
 export type ProductFormErrors = Partial<Record<keyof ProductFormValues, string>>;
@@ -289,7 +308,7 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  * messages. Returns an empty object when the form is valid.
  */
 export function validateProductForm(
-  values: Omit<ProductFormValues, "image">
+  values: Omit<ProductFormValues, "images">
   ): ProductFormErrors {
   const errors: ProductFormErrors = {};
 
@@ -315,6 +334,43 @@ export function validateProductForm(
   if (!values.categoryId) {
     errors.categoryId = "Please select a category.";
   }
+
+  const comparePriceValue = Number(values.comparePrice);
+  if (values.comparePrice.trim() && (Number.isNaN(comparePriceValue) || comparePriceValue < 0)) {
+    errors.comparePrice = "Compare price must be a valid positive number.";
+  } else if (values.comparePrice.trim() && comparePriceValue < priceValue) {
+    errors.comparePrice = "Compare price should be greater than or equal to the price.";
+  }
+
+  const stockValue = Number(values.stock);
+  if (!values.stock.trim()) {
+    errors.stock = "Stock is required.";
+  } else if (!Number.isInteger(stockValue) || stockValue < 0) {
+    errors.stock = "Stock must be a whole number of zero or more.";
+  }
+
+  const weightValue = Number(values.weight);
+  if (values.weight.trim() && (Number.isNaN(weightValue) || weightValue < 0)) {
+    errors.weight = "Weight must be a valid positive number.";
+  }
+
+  const urlFields: Array<["shopeeUrl" | "tokopediaUrl" | "tiktokUrl", string]> = [
+    ["shopeeUrl", values.shopeeUrl],
+    ["tokopediaUrl", values.tokopediaUrl],
+    ["tiktokUrl", values.tiktokUrl],
+  ];
+
+  urlFields.forEach(([field, value]) => {
+    if (!value.trim()) return;
+    try {
+      const url = new URL(value);
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        errors[field] = "Enter a valid http or https URL.";
+      }
+    } catch {
+      errors[field] = "Enter a valid URL, including https://.";
+    }
+  });
 
   return errors;
 }

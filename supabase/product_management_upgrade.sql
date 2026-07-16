@@ -1,0 +1,17 @@
+-- Catchus Product Management upgrade
+-- Safe for existing databases: this only adds a nullable column, so existing
+-- product rows and all current storefront queries continue to work unchanged.
+
+alter table public.products
+  add column if not exists short_description text;
+
+comment on column public.products.short_description is
+  'Concise product summary for product detail, quick view, and SEO metadata.';
+
+-- Public image access stays limited to active products; authenticated admins
+-- can also load galleries belonging to draft and inactive products.
+drop policy if exists "Authenticated read all product images" on public.product_images;
+create policy "Authenticated read all product images"
+  on public.product_images for select
+  to authenticated
+  using (true);

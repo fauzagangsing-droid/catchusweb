@@ -1,14 +1,8 @@
 "use client";
 
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import type { ProductImagesFieldValue } from "@/lib/admin-products";
 import type { ProductImage } from "@/types/database";
-
-/**
- * product_images row CRUD, used exclusively by the Product Image Upload
- * feature. Deliberately separate from lib/admin-products.ts so the existing
- * Product CRUD (createProduct/updateProduct/deleteProduct) is reused as-is
- * and never touched by this feature.
- */
 
 export interface ImageQueryResult<T> {
   data: T | null;
@@ -19,50 +13,90 @@ function toFriendlyError(rawMessage: string): string {
   const message = rawMessage.toLowerCase();
 
   if (message.includes("row-level security") || message.includes("permission denied")) {
-    return "You don't have permission to do that. Please sign in again.";
+    return "You don't have permission to update product images. Please sign in again.";
   }
   if (message.includes("failed to fetch") || message.includes("network")) {
-    return "Couldn't reach the server. Please check your connection and try again.";
+    return "Couldn't reach the server while saving product images.";
   }
-  return "Something went wrong saving the product image. Please try again.";
+  return "Something went wrong saving the product images. Please try again.";
 }
 
-/**
- * Saves the single thumbnail image row for a product: updates the existing
- * row when `existingImageId` is given, otherwise inserts a new one. Mirrors
- * the "one thumbnail per product" constraint already enforced by
- * uq_one_thumbnail_per_product in supabase/schema.sql.
- */
-export async function saveProductImage(
+/** Reconciles the gallery after the product row is saved. */
+export async function syncProductImages(
   productId: string,
-  imageUrl: string,
-  existingImageId: string | null
-): Promise<ImageQueryResult<ProductImage>> {
-  if (existingImageId) {
+  value: ProductImagesFieldValue
+): Promise<ImageQueryResult<ProductImage[]>> {
+  // Clear first so promoting a new thumbnail cannot violate the partial
+  // unique index that permits only one thumbnail per product.
+  const { error: clearError } = await supabaseBrowser
+    .from("product_images")
+    .update({ is_thumbnail: false })
+    .eq("product_id", productId);
+
+  if (clearError) return { data: null, error: toFriendlyError(clearError.message) };
+
+  const removedIds = value.removedImages.map((image) => image.id);
+  if (removedIds.length > 0) {
+    const { error } = await supabaseBrowser.from("product_images").delete().in("id", removedIds);
+    if (error) return { data: null, error: toFriendlyError(error.message) };
+  }
+
+  const { data: existingRows, error: existingError } = await supabaseBrowser
+    .from("product_images")
+    .select("*")
+    .eq("product_id", productId);
+
+  if (existingError) return { data: null, error: toFriendlyError(existingError.message) };
+
+  // Matching by the immutable public URL makes retries safe if an earlier
+  // attempt inserted gallery rows but failed while assigning the thumbnail.
+  const existingUrls = new Set((existingRows ?? []).map((image) => image.image_url));
+  const newImages = value.images.filter(
+    (image) => !image.id && !existingUrls.has(image.imageUrl)
+  );
+  let inserted: ProductImage[] = [];
+
+  if (newImages.length > 0) {
     const { data, error } = await supabaseBrowser
       .from("product_images")
-      .update({ image_url: imageUrl })
-      .eq("id", existingImageId)
-      .select("*")
-      .single();
+      .insert(
+        newImages.map((image) => ({
+          product_id: productId,
+          image_url: image.imageUrl,
+          is_thumbnail: false,
+        }))
+      )
+      .select("*");
 
     if (error) return { data: null, error: toFriendlyError(error.message) };
-    return { data, error: null };
+    inserted = data ?? [];
+  }
+
+  const thumbnail = value.images.find((image) => image.isThumbnail);
+  if (thumbnail) {
+    const thumbnailId =
+      thumbnail.id ??
+      inserted.find((image) => image.image_url === thumbnail.imageUrl)?.id ??
+      (existingRows ?? []).find((image) => image.image_url === thumbnail.imageUrl)?.id;
+
+    if (!thumbnailId) {
+      return { data: null, error: "The thumbnail could not be saved. Please try again." };
+    }
+
+    const { error } = await supabaseBrowser
+      .from("product_images")
+      .update({ is_thumbnail: true })
+      .eq("id", thumbnailId);
+
+    if (error) return { data: null, error: toFriendlyError(error.message) };
   }
 
   const { data, error } = await supabaseBrowser
     .from("product_images")
-    .insert({ product_id: productId, image_url: imageUrl, is_thumbnail: true })
     .select("*")
-    .single();
+    .eq("product_id", productId)
+    .order("created_at", { ascending: true });
 
   if (error) return { data: null, error: toFriendlyError(error.message) };
-  return { data, error: null };
-}
-
-export async function deleteProductImageRow(imageId: string): Promise<ImageQueryResult<true>> {
-  const { error } = await supabaseBrowser.from("product_images").delete().eq("id", imageId);
-
-  if (error) return { data: null, error: toFriendlyError(error.message) };
-  return { data: true, error: null };
+  return { data: data ?? [], error: null };
 }

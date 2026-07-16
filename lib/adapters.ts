@@ -33,11 +33,13 @@ function resolveBuyUrl(product: ProductWithRelations): string {
 export function toUiProduct(product: ProductWithRelations): UiProduct {
   return {
     id: product.id,
+    slug: product.slug,
     filter: (product.category?.slug ?? "uncategorized") as UiProduct["filter"],
     image: resolveImage(product),
     alt: product.name,
     badge: resolveBadge(product),
     title: product.name,
+    shortDescription: product.short_description ?? "",
     priceOld: product.compare_price ? formatRupiah(product.compare_price) : "",
     priceNew: formatRupiah(product.price),
     buyUrl: resolveBuyUrl(product),

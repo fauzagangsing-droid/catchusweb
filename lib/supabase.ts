@@ -23,4 +23,10 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     // No user sessions/auth in Phase 2 — this is a read-only public catalog client.
     persistSession: false,
   },
+  global: {
+    // Product and category CRUD happens directly in Supabase. Explicitly opt
+    // public catalog reads out of Next's persistent fetch cache so a deleted
+    // row cannot survive in an older joined-query response.
+    fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+  },
 });

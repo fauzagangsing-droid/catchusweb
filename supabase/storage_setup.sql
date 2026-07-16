@@ -73,6 +73,12 @@ create policy "Authenticated delete product images"
 -- ----------------------------------------------------------------------------
 
 drop policy if exists "Authenticated insert product images" on public.product_images;
+drop policy if exists "Authenticated read all product images" on public.product_images;
+create policy "Authenticated read all product images"
+  on public.product_images for select
+  to authenticated
+  using (true);
+
 create policy "Authenticated insert product images"
   on public.product_images for insert
   to authenticated

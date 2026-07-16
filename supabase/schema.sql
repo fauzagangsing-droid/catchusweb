@@ -32,6 +32,7 @@ create table if not exists public.products (
   id             uuid primary key default gen_random_uuid(),
   slug           text not null,
   name           text not null,
+  short_description text,
   description    text,
   brand          text,
   sku            text,
@@ -59,6 +60,7 @@ create table if not exists public.products (
 );
 
 comment on table public.products is 'Catalog products. category_id is nullable + ON DELETE SET NULL so removing a category never deletes products.';
+comment on column public.products.short_description is 'Concise product summary for product cards, quick views, and SEO metadata.';
 
 -- Keep updated_at accurate automatically
 create or replace function public.set_updated_at()

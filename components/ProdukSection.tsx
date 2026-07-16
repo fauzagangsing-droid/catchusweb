@@ -1,8 +1,10 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { Product } from "@/types/product";
 import { useProdukFilter } from "@/hooks/useProdukFilter";
 import ProdukCard from "@/components/ProdukCard";
+import QuickViewModal from "@/components/QuickViewModal";
 
 interface ProdukSectionProps {
   products: Product[];
@@ -16,6 +18,8 @@ export default function ProdukSection({
   errorMessage,
 }: ProdukSectionProps) {
   const { activeFilter, setActiveFilter, isVisible } = useProdukFilter(products);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const closeQuickView = useCallback(() => setQuickViewProduct(null), []);
 
   return (
     <div className="produk" id="produk">
@@ -47,6 +51,7 @@ export default function ProdukSection({
                       key={product.id}
                       product={product}
                       visible={isVisible(product)}
+                      onQuickView={setQuickViewProduct}
                     />
                   ))
                 )}
@@ -55,6 +60,9 @@ export default function ProdukSection({
           )}
         </div>
       </div>
+      {quickViewProduct && (
+        <QuickViewModal product={quickViewProduct} onClose={closeQuickView} />
+      )}
     </div>
   );
 }

@@ -1,0 +1,183 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import Footer from "@/components/Footer";
+import ProductGallery from "@/components/ProductGallery";
+import { formatRupiah } from "@/lib/adapters";
+import { getProductBySlug, getRelatedProducts } from "@/lib/queries";
+import styles from "./product-detail.module.css";
+
+export const dynamic = "force-dynamic";
+
+interface ProductDetailPageProps {
+  params: { slug: string };
+}
+
+export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
+  const { data: product } = await getProductBySlug(params.slug);
+  if (!product) return { title: "Product Not Found | Catchus" };
+
+  return {
+    title: `${product.name} | Catchus`,
+    description: product.short_description ?? product.description ?? undefined,
+  };
+}
+
+export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const { data: product, error } = await getProductBySlug(params.slug);
+  if (error) throw new Error(`Unable to load product: ${error}`);
+  if (!product) notFound();
+
+  const { data: relatedProducts } = await getRelatedProducts(
+    product.category_id,
+    product.id
+  );
+
+  const marketplaces = [
+    { name: "Shopee", url: product.shopee_url, icon: "ri-shopping-bag-3-line" },
+    { name: "Tokopedia", url: product.tokopedia_url, icon: "ri-store-2-line" },
+    { name: "TikTok Shop", url: product.tiktok_url, icon: "ri-tiktok-line" },
+  ].filter((marketplace): marketplace is { name: string; url: string; icon: string } =>
+    Boolean(marketplace.url)
+  );
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={`container ${styles.headerInner}`}>
+          <Link href="/" className={styles.brand}>Catchus</Link>
+          <Link href="/#produk" className={styles.backLink}>
+            <i className="ri-arrow-left-line" />
+            Back to Products
+          </Link>
+        </div>
+      </header>
+
+      <main className={`container ${styles.main}`}>
+        <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+          <Link href="/">Home</Link>
+          <i className="ri-arrow-right-s-line" />
+          <Link href="/#produk">Products</Link>
+          <i className="ri-arrow-right-s-line" />
+          <span>{product.name}</span>
+        </nav>
+
+        <section className={styles.productLayout}>
+          <ProductGallery images={product.product_images} productName={product.name} />
+
+          <div className={styles.summary}>
+            <div className={styles.labels}>
+              {product.category && <span>{product.category.name}</span>}
+              {product.featured && <span className={styles.featured}>Featured</span>}
+            </div>
+
+            <h1>{product.name}</h1>
+            {product.brand && <p className={styles.brandName}>by {product.brand}</p>}
+
+            <div className={styles.priceRow}>
+              {product.compare_price && product.compare_price > product.price && (
+                <span className={styles.comparePrice}>{formatRupiah(product.compare_price)}</span>
+              )}
+              <span className={styles.price}>{formatRupiah(product.price)}</span>
+            </div>
+
+            <div className={styles.availabilityRow}>
+              <span>Availability</span>
+              <strong className={product.stock > 0 ? styles.inStock : styles.outOfStock}>
+                {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+              </strong>
+            </div>
+
+            {product.short_description && (
+              <p className={styles.shortDescription}>{product.short_description}</p>
+            )}
+
+            <div className={styles.informationBlock}>
+              <span className={styles.sectionEyebrow}>Product Information</span>
+            <dl className={styles.facts}>
+              {product.category && <div><dt>Category</dt><dd>{product.category.name}</dd></div>}
+              {product.brand && <div><dt>Brand</dt><dd>{product.brand}</dd></div>}
+              {product.sku && <div><dt>SKU</dt><dd>{product.sku}</dd></div>}
+              {product.weight != null && <div><dt>Weight</dt><dd>{product.weight} g</dd></div>}
+            </dl>
+            </div>
+
+            {marketplaces.length > 0 && (
+              <div className={styles.marketplaces}>
+                <span>Buy this product</span>
+                <div className={styles.marketplaceButtons}>
+                  {marketplaces.map((marketplace) => (
+                    <a key={marketplace.name} href={marketplace.url} target="_blank" rel="noopener noreferrer">
+                      <i className={marketplace.icon} />
+                      Buy on {marketplace.name}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <section className={styles.aboutSection}>
+              <span className={styles.sectionEyebrow}>Full Description</span>
+              <h2>About this product</h2>
+              <p>{product.description || product.short_description || "Full product information will be available soon."}</p>
+            </section>
+
+            <section className={styles.shippingSection}>
+              <span className={styles.sectionEyebrow}>Shipping Information</span>
+              <div className={styles.shippingItems}>
+                <div>
+                  <i className="ri-box-3-line" />
+                  <p><strong>Carefully packed</strong><span>Your order is prepared securely before dispatch.</span></p>
+                </div>
+                <div>
+                  <i className="ri-truck-line" />
+                  <p><strong>Marketplace delivery</strong><span>Cost and delivery estimates are calculated at checkout.</span></p>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        {(relatedProducts?.length ?? 0) > 0 && (
+          <section className={styles.relatedSection}>
+            <div className={styles.relatedHeader}>
+              <div>
+                <span className={styles.sectionEyebrow}>You may also like</span>
+                <h2>Related Products</h2>
+              </div>
+              <Link href="/#produk">View all products <i className="ri-arrow-right-line" /></Link>
+            </div>
+            <div className={styles.relatedGrid}>
+              {relatedProducts?.map((relatedProduct) => {
+                const thumbnail =
+                  relatedProduct.product_images.find((image) => image.is_thumbnail) ??
+                  relatedProduct.product_images[0];
+
+                return (
+                  <Link key={relatedProduct.id} href={`/product/${relatedProduct.slug}`} className={styles.relatedCard}>
+                    <div className={styles.relatedImage}>
+                      <Image
+                        src={thumbnail?.image_url ?? "/images/catchus.PNG"}
+                        alt={relatedProduct.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 260px"
+                      />
+                    </div>
+                    <div className={styles.relatedBody}>
+                      <span>{relatedProduct.category?.name ?? "Product"}</span>
+                      <h3>{relatedProduct.name}</h3>
+                      <strong>{formatRupiah(relatedProduct.price)}</strong>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
