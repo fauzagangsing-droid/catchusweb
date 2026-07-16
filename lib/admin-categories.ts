@@ -88,9 +88,7 @@ export async function getAdminCategories(
   const { data, error } = await query;
   if (error) return { data: null, error: toFriendlyError(error.message) };
 
-  const categories = ((data ?? []) as unknown as Array<
-    Category & { products?: Array<{ count?: number }> }
-  >).map(({ products, ...category }) => ({
+  const categories = (data ?? []).map(({ products, ...category }) => ({
     ...category,
     product_count: products?.[0]?.count ?? 0,
   }));
@@ -113,8 +111,8 @@ export async function findCategoryDuplicate(
   if (nameResult.error) return { data: null, error: toFriendlyError(nameResult.error.message) };
   if (slugResult.error) return { data: null, error: toFriendlyError(slugResult.error.message) };
 
-  const matchingNames = (nameResult.data ?? []) as unknown as Array<Pick<Category, "id">>;
-  const matchingSlugs = (slugResult.data ?? []) as unknown as Array<Pick<Category, "id">>;
+  const matchingNames = nameResult.data ?? [];
+  const matchingSlugs = slugResult.data ?? [];
 
   if (matchingNames.some((category) => category.id !== excludeId)) {
     return { data: "name", error: null };
@@ -130,11 +128,11 @@ export async function createCategory(
 ): Promise<AdminQueryResult<Category>> {
   const { data, error } = await supabaseBrowser
     .from("categories")
-    .insert(input as never)
+    .insert(input)
     .select("*")
     .single();
   if (error) return { data: null, error: toFriendlyError(error.message) };
-  return { data: data as unknown as Category, error: null };
+  return { data, error: null };
 }
 
 export async function updateCategory(
@@ -143,12 +141,12 @@ export async function updateCategory(
 ): Promise<AdminQueryResult<Category>> {
   const { data, error } = await supabaseBrowser
     .from("categories")
-    .update(input as never)
+    .update(input)
     .eq("id", id)
     .select("*")
     .single();
   if (error) return { data: null, error: toFriendlyError(error.message) };
-  return { data: data as unknown as Category, error: null };
+  return { data, error: null };
 }
 
 export async function deleteCategory(id: string): Promise<AdminQueryResult<true>> {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type MouseEvent } from "react";
 import {
   ALLOWED_IMAGE_EXTENSIONS,
@@ -115,7 +116,6 @@ export default function ImageUploader({
         void deleteStorageImage(current.path);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const emit = (next: ImageSource) => {
@@ -251,8 +251,14 @@ export default function ImageUploader({
 
         {previewUrl ? (
           <div className={styles.previewWrap}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- local blob: URLs and dynamic uploaded URLs aren't compatible with next/image here */}
-            <img src={previewUrl} alt="Product preview" className={styles.previewImg} />
+            <Image
+              src={previewUrl}
+              alt={imageAlt}
+              fill
+              unoptimized
+              sizes="(max-width: 640px) 100vw, 320px"
+              className={styles.previewImg}
+            />
 
             {justSucceeded && (
               <span className={`${styles.statusBadge} ${styles.statusSuccess}`}>

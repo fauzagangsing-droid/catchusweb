@@ -43,5 +43,5 @@ export async function getProducts(): Promise<QueryResult<ProductWithRelations[]>
     return { data: null, error: error.message };
   }
 
-  return { data: (data as unknown as ProductWithRelations[]) ?? [], error: null };
+  return { data: data ?? [], error: null };
 }

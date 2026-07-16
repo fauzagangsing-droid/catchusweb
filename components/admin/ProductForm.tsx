@@ -63,7 +63,6 @@ export default function ProductForm({
   // be uploaded to Storage before the product row itself is created).
   const clientProductId = useMemo(
     () => initialProduct?.id ?? crypto.randomUUID(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [initialProduct]
   );
 
@@ -72,7 +71,6 @@ export default function ProductForm({
     if (!images || images.length === 0) return null;
     const thumbnail = images.find((image) => image.is_thumbnail) ?? images[0];
     return { id: thumbnail.id, url: thumbnail.image_url };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProduct]);
 
   const [imageValue, setImageValue] = useState<ImageUploaderResolvedValue>(() => ({

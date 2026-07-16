@@ -148,7 +148,7 @@ export async function getAdminProducts(
 
   return {
     data: {
-      products: (data as unknown as ProductWithRelations[]) ?? [],
+      products: data ?? [],
       totalCount: count ?? 0,
     },
     error: null,
@@ -160,7 +160,7 @@ export async function createProduct(
 ): Promise<AdminQueryResult<ProductWithRelations>> {
   const { data, error } = await supabaseBrowser
     .from("products")
-    .insert(input)
+    .insert([input])
     .select(
       `
         *,
@@ -173,7 +173,7 @@ export async function createProduct(
   if (error) {
     return { data: null, error: toFriendlyError(error.message) };
   }
-  return { data: data as unknown as ProductWithRelations, error: null };
+  return { data, error: null };
 }
 
 export async function updateProduct(
@@ -196,7 +196,7 @@ export async function updateProduct(
   if (error) {
     return { data: null, error: toFriendlyError(error.message) };
   }
-  return { data: data as unknown as ProductWithRelations, error: null };
+  return { data, error: null };
 }
 
 export async function deleteProduct(id: string): Promise<AdminQueryResult<true>> {
@@ -288,7 +288,9 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  * Validates the Add/Edit Product form and returns friendly, field-level
  * messages. Returns an empty object when the form is valid.
  */
-export function validateProductForm(values: ProductFormValues): ProductFormErrors {
+export function validateProductForm(
+  values: Omit<ProductFormValues, "image">
+  ): ProductFormErrors {
   const errors: ProductFormErrors = {};
 
   if (!values.name.trim()) {
