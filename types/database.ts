@@ -45,6 +45,29 @@ export type WebsiteSettingsInsert = Partial<Omit<WebsiteSettings, "id" | "update
 
 export type WebsiteSettingsUpdate = Partial<Omit<WebsiteSettingsInsert, "id">>;
 
+export type Profile = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProfileInsert = {
+  id: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ProfileUpdate = Partial<Omit<ProfileInsert, "id">>;
+
+export type AdminUser = {
+  id: string;
+  created_at: string;
+};
+
 export type Banner = {
   id: string;
   title: string;
@@ -218,6 +241,18 @@ export interface Database {
         Row: WebsiteSettings;
         Insert: WebsiteSettingsInsert;
         Update: WebsiteSettingsUpdate;
+        Relationships: [];
+      };
+      profiles: {
+        Row: Profile;
+        Insert: ProfileInsert;
+        Update: ProfileUpdate;
+        Relationships: [];
+      };
+      admin_users: {
+        Row: AdminUser;
+        Insert: { id: string; created_at?: string };
+        Update: { created_at?: string };
         Relationships: [];
       };
       banners: {

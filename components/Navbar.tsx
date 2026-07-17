@@ -2,6 +2,7 @@
 
 import { useMobileMenu } from "@/hooks/useMobileMenu";
 import ProductSearch from "@/components/ProductSearch";
+import CustomerAuthNav from "@/components/auth/CustomerAuthNav";
 
 interface NavbarProps {
   brandName: string;
@@ -28,17 +29,18 @@ export default function Navbar({ brandName, logoUrl }: NavbarProps) {
           <ProductSearch />
           <ul className={`menu${menuActive ? " menu-active" : ""}`}>
             <li>
-              <a href="#beranda">Beranda</a>
+              <a href="/#beranda">Beranda</a>
             </li>
             <li>
-              <a href="#layanan">Layanan</a>
+              <a href="/#layanan">Layanan</a>
             </li>
             <li>
-              <a href="#produk">Product</a>
+              <a href="/#produk">Product</a>
             </li>
             <li>
-              <a href="#kontak">Kontak</a>
+              <a href="/#kontak">Kontak</a>
             </li>
+            <CustomerAuthNav />
           </ul>
 
           {/* menumen */}

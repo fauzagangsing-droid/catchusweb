@@ -64,6 +64,103 @@ body {
     border-bottom: 3px solid black;
 }
 
+.navbar-box .menu .customer-auth-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-box .menu .customer-auth-nav a {
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+.navbar-box .menu .customer-auth-nav a.customer-login-link,
+.navbar-box .menu .customer-auth-nav a.customer-register-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 11px;
+    line-height: 1;
+    border-radius: 6px;
+}
+
+@media (min-width: 993px) {
+    .navbar-box .menu {
+        align-items: center;
+    }
+
+    .navbar-box .menu .customer-auth-nav {
+        align-self: center;
+        gap: 12px;
+    }
+
+    .navbar-box .menu .customer-auth-nav a.customer-login-link,
+    .navbar-box .menu .customer-auth-nav a.customer-register-link {
+        width: 94px;
+        height: 40px;
+        padding: 0 14px;
+        line-height: 1;
+        border-radius: 6px;
+        vertical-align: middle;
+    }
+}
+
+.navbar-box .menu .customer-login-link {
+    border: 2px solid transparent;
+}
+
+.navbar-box .menu .customer-login-link:hover {
+    border-bottom: 2px solid #111;
+}
+
+.navbar-box .menu .customer-register-link {
+    border: 2px solid #111;
+    background: #111;
+    color: #fff;
+}
+
+.navbar-box .menu .customer-register-link:hover {
+    background: #fff;
+    color: #111;
+    border-bottom: 2px solid #111;
+}
+
+.customer-account-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.customer-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: #e7e7e7;
+}
+
+.customer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.customer-logout {
+    border: 0;
+    background: transparent;
+    color: #111;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.customer-logout:hover { text-decoration: underline; }
+.customer-auth-placeholder { width: 100px; height: 34px; display: block; }
+
 .navbar-box .ri-menu-3-line {
     display: none;
     font-size: 28px;
@@ -135,6 +232,17 @@ body {
         font-size:22px;
         color:#111;
         text-decoration:none;
+    }
+
+    .navbar .menu .customer-auth-nav {
+        padding: 16px 0;
+        flex-wrap: wrap;
+    }
+
+    .navbar .menu .customer-auth-nav a {
+        width: auto;
+        padding: 0 10px;
+        font-size: 16px;
     }
 }
 
