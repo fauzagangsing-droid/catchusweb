@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import AosInit from "@/components/AosInit";
+import CartProvider from "@/components/cart/CartProvider";
 import { getWebsiteSettings } from "@/lib/queries";
 import { getSiteUrl } from "@/lib/seo";
 import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
@@ -45,7 +46,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
       </head>
       <body id="beranda" className={poppins.className}>
-        {children}
+        <CartProvider>{children}</CartProvider>
         {/* Replaces the inline <script>AOS.init()</script> from index.html */}
         <AosInit />
       </body>

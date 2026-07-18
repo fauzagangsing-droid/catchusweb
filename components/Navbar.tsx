@@ -3,6 +3,7 @@
 import { useMobileMenu } from "@/hooks/useMobileMenu";
 import ProductSearch from "@/components/ProductSearch";
 import CustomerAuthNav from "@/components/auth/CustomerAuthNav";
+import CartBadge from "@/components/cart/CartBadge";
 
 interface NavbarProps {
   brandName: string;
@@ -39,6 +40,9 @@ export default function Navbar({ brandName, logoUrl }: NavbarProps) {
             </li>
             <li>
               <a href="/#kontak">Kontak</a>
+            </li>
+            <li className="cart-nav-item">
+              <CartBadge />
             </li>
             <CustomerAuthNav />
           </ul>

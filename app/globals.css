@@ -64,6 +64,21 @@ body {
     border-bottom: 3px solid black;
 }
 
+.navbar-box .menu .cart-nav-link {
+    min-width: 58px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.navbar-box .menu .cart-nav-link i {
+    font-size: 20px;
+}
+
 .navbar-box .menu .customer-auth-nav {
     display: flex;
     align-items: center;
@@ -232,6 +247,11 @@ body {
         font-size:22px;
         color:#111;
         text-decoration:none;
+    }
+
+    .navbar .menu .cart-nav-link {
+        justify-content: flex-start;
+        gap: 10px;
     }
 
     .navbar .menu .customer-auth-nav {

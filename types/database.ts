@@ -63,6 +63,52 @@ export type ProfileInsert = {
 
 export type ProfileUpdate = Partial<Omit<ProfileInsert, "id">>;
 
+export type Cart = {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CartInsert = {
+  id?: string;
+  user_id: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CartUpdate = Partial<Omit<CartInsert, "id" | "user_id">>;
+
+export type CartItem = {
+  id: string;
+  cart_id: string;
+  product_id: string;
+  quantity: number;
+  selected_size: string | null;
+  selected_color: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CartItemInsert = {
+  id?: string;
+  cart_id: string;
+  product_id: string;
+  quantity?: number;
+  selected_size?: string | null;
+  selected_color?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CartItemUpdate = Partial<
+  Omit<CartItemInsert, "id" | "cart_id" | "product_id">
+>;
+
+export interface CartItemWithProduct extends CartItem {
+  product: (Product & { product_images: ProductImage[] }) | null;
+}
+
 export type AdminUser = {
   id: string;
   created_at: string;
@@ -249,6 +295,33 @@ export interface Database {
         Update: ProfileUpdate;
         Relationships: [];
       };
+      carts: {
+        Row: Cart;
+        Insert: CartInsert;
+        Update: CartUpdate;
+        Relationships: [];
+      };
+      cart_items: {
+        Row: CartItem;
+        Insert: CartItemInsert;
+        Update: CartItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey";
+            columns: ["cart_id"];
+            isOneToOne: false;
+            referencedRelation: "carts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cart_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       admin_users: {
         Row: AdminUser;
         Insert: { id: string; created_at?: string };
@@ -294,7 +367,14 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      add_cart_item: {
+        Args: { p_product_id: string; p_quantity?: number };
+        Returns: CartItem;
+      };
+      update_cart_item_quantity: {
+        Args: { p_cart_item_id: string; p_quantity: number };
+        Returns: CartItem;
+      };
     };
     Enums: {
       [_ in never]: never;

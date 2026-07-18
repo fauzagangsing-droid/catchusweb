@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import ProductGallery from "@/components/ProductGallery";
+import AddToCartButton from "@/components/cart/AddToCartButton";
 import { formatRupiah } from "@/lib/adapters";
 import { getProductBySlug, getRelatedProducts, getWebsiteSettings } from "@/lib/queries";
 import {
@@ -140,6 +141,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             {product.short_description && (
               <p className={styles.shortDescription}>{product.short_description}</p>
             )}
+
+            <AddToCartButton
+              productId={product.id}
+              productName={product.name}
+              stock={product.stock}
+            />
 
             <div className={styles.informationBlock}>
               <span className={styles.sectionEyebrow}>Product Information</span>
