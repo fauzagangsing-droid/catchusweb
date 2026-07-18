@@ -42,9 +42,14 @@ export async function getAdminOrders(filters: AdminOrderFilters): Promise<{
   return { data: (data ?? []) as OrderWithItems[], error: null };
 }
 
-export async function runAdminOrderAction(
+async function updateAdminOrder(
   orderId: string,
-  action: AdminOrderAction
+  payload:
+    | { action: AdminOrderAction }
+    | {
+        action: "save_shipping";
+        trackingNumber: string;
+      }
 ): Promise<{ data: Order | null; error: string | null }> {
   const {
     data: { session },
@@ -61,7 +66,7 @@ export async function runAdminOrderAction(
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify(payload),
     });
     const result = (await response.json()) as {
       order?: Order;
@@ -74,4 +79,21 @@ export async function runAdminOrderAction(
   } catch {
     return { data: null, error: "Tidak dapat terhubung. Silakan coba lagi." };
   }
+}
+
+export async function runAdminOrderAction(
+  orderId: string,
+  action: AdminOrderAction
+): Promise<{ data: Order | null; error: string | null }> {
+  return updateAdminOrder(orderId, { action });
+}
+
+export async function saveAdminOrderShipping(
+  orderId: string,
+  trackingNumber: string
+): Promise<{ data: Order | null; error: string | null }> {
+  return updateAdminOrder(orderId, {
+    action: "save_shipping",
+    trackingNumber,
+  });
 }

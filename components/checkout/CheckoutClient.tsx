@@ -16,8 +16,12 @@ import type {
   CartItemWithProduct,
   PaymentMethod,
   PaymentSettings,
+  ShippingCourier,
 } from "@/types/database";
-import type { CheckoutFormValues } from "@/types/order";
+import {
+  SHIPPING_COURIER_LABELS,
+  type CheckoutFormValues,
+} from "@/types/order";
 import styles from "./Checkout.module.css";
 
 interface CheckoutClientProps {
@@ -27,8 +31,14 @@ interface CheckoutClientProps {
   paymentSettings: PaymentSettings | null;
 }
 
-type CheckoutField = Exclude<keyof CheckoutFormValues, "paymentMethod">;
-type FieldErrors = Partial<Record<keyof CheckoutFormValues, string>>;
+type CheckoutFormState = Omit<CheckoutFormValues, "courier"> & {
+  courier: ShippingCourier | "";
+};
+type CheckoutField = Exclude<
+  keyof CheckoutFormState,
+  "courier" | "paymentMethod"
+>;
+type FieldErrors = Partial<Record<keyof CheckoutFormState, string>>;
 
 function getProductImage(item: CartItemWithProduct): string {
   const images = item.product?.product_images ?? [];
@@ -39,7 +49,7 @@ function getProductImage(item: CartItemWithProduct): string {
   );
 }
 
-function validate(values: CheckoutFormValues): FieldErrors {
+function validate(values: CheckoutFormState): FieldErrors {
   const errors: FieldErrors = {};
   if (values.fullName.trim().length < 2) errors.fullName = "Masukkan nama penerima.";
   if (!/^[0-9+()\-\s]{8,20}$/.test(values.phone.trim())) errors.phone = "Masukkan nomor telepon yang valid.";
@@ -47,6 +57,7 @@ function validate(values: CheckoutFormValues): FieldErrors {
   if (values.city.trim().length < 2) errors.city = "Masukkan kota atau kabupaten.";
   if (values.province.trim().length < 2) errors.province = "Masukkan provinsi.";
   if (!/^\d{4,10}$/.test(values.postalCode.trim())) errors.postalCode = "Masukkan kode pos yang valid.";
+  if (!values.courier) errors.courier = "Pilih kurir pengiriman.";
   if (!values.paymentMethod) errors.paymentMethod = "Pilih metode pembayaran.";
   return errors;
 }
@@ -69,13 +80,14 @@ export default function CheckoutClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [values, setValues] = useState<CheckoutFormValues>({
+  const [values, setValues] = useState<CheckoutFormState>({
     fullName: initialFullName,
     phone: "",
     address: "",
     city: "",
     province: "",
     postalCode: "",
+    courier: "",
     paymentMethod: qrisConfigured
       ? "qris"
       : danaConfigured
@@ -116,6 +128,11 @@ export default function CheckoutClient({
   function selectPaymentMethod(paymentMethod: PaymentMethod) {
     setValues((current) => ({ ...current, paymentMethod }));
     setErrors((current) => ({ ...current, paymentMethod: undefined }));
+  }
+
+  function selectCourier(courier: ShippingCourier | "") {
+    setValues((current) => ({ ...current, courier }));
+    setErrors((current) => ({ ...current, courier: undefined }));
   }
 
   async function placeOrder(event: FormEvent<HTMLFormElement>) {
@@ -237,6 +254,27 @@ export default function CheckoutClient({
                     {field("province", "Provinsi", "address-level1")}
                   </div>
                   {field("postalCode", "Kode Pos", "postal-code", "numeric")}
+                  <div className={styles.field}>
+                    <label htmlFor="checkout-courier">Kurir</label>
+                    <select
+                      id="checkout-courier"
+                      value={values.courier}
+                      onChange={(event) =>
+                        selectCourier(event.target.value as ShippingCourier | "")
+                      }
+                      disabled={submitting}
+                      aria-invalid={Boolean(errors.courier)}
+                      required
+                    >
+                      <option value="">Pilih kurir</option>
+                      {Object.entries(SHIPPING_COURIER_LABELS).map(
+                        ([value, label]) => (
+                          <option value={value} key={value}>{label}</option>
+                        )
+                      )}
+                    </select>
+                    {errors.courier && <span>{errors.courier}</span>}
+                  </div>
                 </div>
               </section>
 

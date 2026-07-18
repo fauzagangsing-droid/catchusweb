@@ -2,11 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import OrderShippingSection from "@/components/admin/OrderShippingSection";
 import RequireAdminAuth from "@/components/admin/RequireAdminAuth";
 import Sidebar from "@/components/admin/Sidebar";
 import Topbar from "@/components/admin/Topbar";
 import { formatRupiah } from "@/lib/adapters";
-import { getAdminOrders, runAdminOrderAction } from "@/lib/admin-orders";
+import {
+  getAdminOrders,
+  runAdminOrderAction,
+  saveAdminOrderShipping,
+} from "@/lib/admin-orders";
 import type {
   OrderStatus,
   OrderWithItems,
@@ -38,7 +43,6 @@ function getAvailableActions(order: OrderWithItems): AdminOrderAction[] {
     actions.push("approve_payment", "reject_payment");
   }
   if (order.order_status === "paid") actions.push("mark_processing");
-  if (order.order_status === "processing") actions.push("mark_shipped");
   if (order.order_status === "shipped") actions.push("mark_completed");
   if (!["completed", "cancelled"].includes(order.order_status)) {
     actions.push("cancel_order");
@@ -80,6 +84,21 @@ function OrdersContent() {
     setUpdatingId(order.id);
     setError(null);
     const result = await runAdminOrderAction(order.id, action);
+    if (result.error) setError(result.error);
+    await loadOrders();
+    setUpdatingId(null);
+  }
+
+  async function handleShippingSave(
+    order: OrderWithItems,
+    trackingNumber: string
+  ) {
+    setUpdatingId(order.id);
+    setError(null);
+    const result = await saveAdminOrderShipping(
+      order.id,
+      trackingNumber
+    );
     if (result.error) setError(result.error);
     await loadOrders();
     setUpdatingId(null);
@@ -128,11 +147,18 @@ function OrdersContent() {
                     </div>
 
                     <details className={styles.details}>
-                      <summary>Lihat detail pelanggan dan produk</summary>
+                      <summary>Lihat detail pelanggan, produk, dan pengiriman</summary>
                       <div className={styles.detailGrid}>
                         <section><h3>Informasi Pengiriman</h3><strong>{order.shipping_full_name}</strong><p>{order.shipping_address}<br />{order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}</p><span>{order.shipping_phone}</span></section>
                         <section><h3>Produk yang Dipesan</h3><div className={styles.products}>{order.order_items.map((item) => <div className={styles.product} key={item.id}><div className={styles.productImage}><Image src={item.product_image_url ?? "/images/catchus.PNG"} alt={item.product_name} fill sizes="48px" /></div><div><strong>{item.product_name}</strong><span>{item.quantity} × {formatRupiah(item.unit_price)}</span></div><b>{formatRupiah(item.subtotal)}</b></div>)}</div></section>
                       </div>
+                      <OrderShippingSection
+                        order={order}
+                        saving={updatingId === order.id}
+                        onSave={(trackingNumber) =>
+                          handleShippingSave(order, trackingNumber)
+                        }
+                      />
                     </details>
 
                     {actions.length > 0 && (

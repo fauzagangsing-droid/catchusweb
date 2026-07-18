@@ -14,6 +14,7 @@ function isCheckoutPayload(value: unknown): value is CheckoutFormValues {
     typeof payload.city === "string" &&
     typeof payload.province === "string" &&
     typeof payload.postalCode === "string" &&
+    (payload.courier === "jnt_express" || payload.courier === "jne") &&
     (payload.paymentMethod === "qris" ||
       payload.paymentMethod === "dana" ||
       payload.paymentMethod === "bank_transfer")
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
       p_shipping_city: payload.city,
       p_shipping_province: payload.province,
       p_shipping_postal_code: payload.postalCode,
+      p_shipping_courier: payload.courier,
     });
 
   if (error || !order) {

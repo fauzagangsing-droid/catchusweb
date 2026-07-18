@@ -16,7 +16,6 @@ const ACTIONS: AdminOrderAction[] = [
   "mark_completed",
   "cancel_order",
 ];
-
 function isAdminOrderAction(value: unknown): value is AdminOrderAction {
   return typeof value === "string" && ACTIONS.includes(value as AdminOrderAction);
 }
@@ -41,10 +40,40 @@ export async function PATCH(
     return NextResponse.json({ error: "Tindakan pesanan tidak valid." }, { status: 400 });
   }
 
-  const action =
+  const payload =
     typeof body === "object" && body !== null
-      ? (body as Record<string, unknown>).action
+      ? (body as Record<string, unknown>)
       : null;
+  const action = payload?.action;
+
+  if (action === "save_shipping") {
+    const trackingNumber = payload?.trackingNumber;
+    if (typeof trackingNumber !== "string" || !trackingNumber.trim()) {
+      return NextResponse.json(
+        { error: "Nomor resi wajib diisi." },
+        { status: 400 }
+      );
+    }
+
+    const { data: order, error } = await supabase.rpc(
+      "admin_save_order_shipping",
+      {
+        p_order_id: params.orderId,
+        p_tracking_number: trackingNumber.trim(),
+      }
+    );
+
+    if (error || !order) {
+      return NextResponse.json(
+        { error: friendlyOrderError(error?.message ?? "") },
+        { status: 400 }
+      );
+    }
+
+    await updateOrderDiscordNotification(order);
+    return NextResponse.json({ order });
+  }
+
   if (!isAdminOrderAction(action)) {
     return NextResponse.json({ error: "Tindakan pesanan tidak valid." }, { status: 400 });
   }

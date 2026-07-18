@@ -110,6 +110,7 @@ export interface CartItemWithProduct extends CartItem {
 }
 
 export type PaymentMethod = "qris" | "dana" | "bank_transfer";
+export type ShippingCourier = "jnt_express" | "jne";
 export type PaymentStatus =
   | "pending"
   | "waiting_verification"
@@ -158,6 +159,8 @@ export type Order = {
   shipping_city: string;
   shipping_province: string;
   shipping_postal_code: string;
+  shipping_courier: ShippingCourier | null;
+  tracking_number: string | null;
   subtotal: number;
   shipping_cost: number;
   total: number;
@@ -525,6 +528,7 @@ export interface Database {
           p_shipping_city: string;
           p_shipping_province: string;
           p_shipping_postal_code: string;
+          p_shipping_courier: ShippingCourier;
         };
         Returns: Order;
       };
@@ -546,6 +550,13 @@ export interface Database {
             | "mark_shipped"
             | "mark_completed"
             | "cancel_order";
+        };
+        Returns: Order;
+      };
+      admin_save_order_shipping: {
+        Args: {
+          p_order_id: string;
+          p_tracking_number: string;
         };
         Returns: Order;
       };

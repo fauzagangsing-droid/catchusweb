@@ -25,6 +25,12 @@ export function friendlyOrderError(message: string): string {
   if (normalized.includes("status transition")) {
     return "Tindakan tersebut tidak sesuai dengan status pesanan saat ini.";
   }
+  if (normalized.includes("kurir") || normalized.includes("nomor resi")) {
+    return "Kurir dan nomor resi wajib diisi sebelum pesanan dikirim.";
+  }
+  if (normalized.includes("informasi pengiriman")) {
+    return "Informasi pengiriman hanya dapat disimpan saat pesanan sedang diproses.";
+  }
 
   return "Pesanan tidak dapat diproses. Silakan coba lagi.";
 }

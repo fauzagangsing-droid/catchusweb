@@ -6,6 +6,7 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
+  SHIPPING_COURIER_LABELS,
 } from "@/types/order";
 import styles from "./CustomerOrders.module.css";
 
@@ -63,6 +64,24 @@ export default function CustomerOrders({ orders, error }: CustomerOrdersProps) {
                   <Link href={`/payment/${order.order_number}`}>Lanjutkan Pembayaran</Link>
                 )}
               </div>
+
+              {order.shipping_courier && (
+                <section className={styles.shipping}>
+                  <div className={styles.shippingTitle}>
+                    <i className="ri-truck-line" aria-hidden="true" />
+                    <h3>Pengiriman</h3>
+                  </div>
+                  <dl>
+                    <div><dt>Kurir</dt><dd>{SHIPPING_COURIER_LABELS[order.shipping_courier]}</dd></div>
+                    {order.tracking_number && (
+                      <>
+                        <div><dt>Nomor Resi</dt><dd>{order.tracking_number}</dd></div>
+                        <div><dt>Status</dt><dd>{ORDER_STATUS_LABELS[order.order_status]}</dd></div>
+                      </>
+                    )}
+                  </dl>
+                </section>
+              )}
             </article>
           ))}
         </div>

@@ -1,0 +1,27 @@
+.section { margin: 0 19px 18px; padding: 16px; border: 1px solid #e3e3e3; border-radius: 10px; background: #fafafa; }
+.header { display: flex; align-items: flex-start; gap: 10px; }
+.header > i { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 8px; background: #111; color: #fff; display: grid; place-items: center; font-size: 17px; }
+.header h3 { font-size: 13px; }
+.header p { margin-top: 3px; color: #777; font-size: 10px; }
+.form { margin-top: 15px; display: grid; grid-template-columns: minmax(150px,.65fr) minmax(200px,1fr) auto; align-items: flex-end; gap: 12px; }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 10px; font-weight: 700; }
+.field input { width: 100%; height: 40px; padding: 0 11px; border: 1px solid #d8d8d8; border-radius: 7px; background: #fff; color: #111; font: inherit; font-size: 11px; outline: none; }
+.field input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+.readOnlyField { min-height: 40px; padding: 7px 10px; border: 1px solid #e1e1e1; border-radius: 7px; background: #f2f2f2; display: grid; gap: 1px; }
+.readOnlyField span { color: #777; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.readOnlyField strong { font-size: 11px; }
+.readOnlyField small { color: #888; font-size: 8px; }
+.form button, .savedDetails a { min-height: 40px; padding: 9px 13px; border: 1px solid #111; border-radius: 7px; background: #111; color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 7px; font: inherit; font-size: 10px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.form button:hover:not(:disabled), .savedDetails a:hover { background: #fff; color: #111; }
+.form button:disabled { opacity: .55; cursor: not-allowed; }
+.form > p { grid-column: 1 / -1; margin: 0; color: #a5222d; font-size: 10px; }
+.savedDetails { margin-top: 14px; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.savedDetails dl { flex: 1; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.savedDetails dl div { display: grid; gap: 3px; }
+.savedDetails dt { color: #888; font-size: 9px; text-transform: uppercase; }
+.savedDetails dd { overflow-wrap: anywhere; font-size: 11px; font-weight: 700; }
+.savedDetails a { background: #1f8f4e; border-color: #1f8f4e; white-space: nowrap; }
+.savedDetails a:hover { color: #1f8f4e; border-color: #1f8f4e; }
+@media (max-width: 760px) { .form { grid-template-columns: 1fr; } .savedDetails { align-items: stretch; flex-direction: column; } .savedDetails a { width: 100%; } }
+@media (max-width: 520px) { .section { margin-inline: 14px; padding: 14px; } .savedDetails dl { grid-template-columns: 1fr; } }

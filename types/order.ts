@@ -2,6 +2,7 @@ import type {
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
+  ShippingCourier,
 } from "@/types/database";
 
 export type AdminOrderAction =
@@ -19,6 +20,7 @@ export interface CheckoutFormValues {
   city: string;
   province: string;
   postalCode: string;
+  courier: ShippingCourier;
   paymentMethod: PaymentMethod;
 }
 
@@ -43,4 +45,9 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   shipped: "Sedang Dikirim",
   completed: "Selesai",
   cancelled: "Dibatalkan",
+};
+
+export const SHIPPING_COURIER_LABELS: Record<ShippingCourier, string> = {
+  jnt_express: "J&T Express",
+  jne: "JNE",
 };
