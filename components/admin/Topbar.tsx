@@ -15,7 +15,7 @@ export default function Topbar({ title, onOpenMobile }: TopbarProps) {
           type="button"
           className={styles.hamburger}
           onClick={onOpenMobile}
-          aria-label="Open sidebar menu"
+          aria-label="Buka menu samping"
         >
           <i className="ri-menu-3-line" />
         </button>

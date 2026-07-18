@@ -109,6 +109,104 @@ export interface CartItemWithProduct extends CartItem {
   product: (Product & { product_images: ProductImage[] }) | null;
 }
 
+export type PaymentMethod = "qris" | "dana" | "bank_transfer";
+export type PaymentStatus =
+  | "pending"
+  | "waiting_verification"
+  | "paid"
+  | "rejected";
+export type OrderStatus =
+  | "pending_payment"
+  | "waiting_verification"
+  | "paid"
+  | "processing"
+  | "shipped"
+  | "completed"
+  | "cancelled";
+
+export type PaymentSettings = {
+  id: number;
+  qris_merchant_name: string | null;
+  qris_image_url: string | null;
+  qris_description: string | null;
+  dana_account_name: string | null;
+  dana_number: string | null;
+  bank_name: string | null;
+  bank_account_holder: string | null;
+  bank_account_number: string | null;
+  shipping_cost: number;
+  updated_at: string;
+};
+
+export type PaymentSettingsInsert = Partial<Omit<PaymentSettings, "updated_at">> & {
+  id?: number;
+  updated_at?: string;
+};
+
+export type PaymentSettingsUpdate = Partial<
+  Omit<PaymentSettingsInsert, "id">
+>;
+
+export type Order = {
+  id: string;
+  order_number: string;
+  user_id: string | null;
+  customer_email: string;
+  shipping_full_name: string;
+  shipping_phone: string;
+  shipping_address: string;
+  shipping_city: string;
+  shipping_province: string;
+  shipping_postal_code: string;
+  subtotal: number;
+  shipping_cost: number;
+  total: number;
+  payment_method: PaymentMethod;
+  payment_status: PaymentStatus;
+  order_status: OrderStatus;
+  discord_message_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrderInsert = Omit<Order, "id" | "created_at" | "updated_at"> & {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type OrderUpdate = Partial<
+  Omit<OrderInsert, "id" | "order_number" | "user_id">
+>;
+
+export type OrderItem = {
+  id: string;
+  order_id: string;
+  product_id: string | null;
+  product_name: string;
+  product_slug: string;
+  product_image_url: string | null;
+  selected_size: string | null;
+  selected_color: string | null;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  created_at: string;
+};
+
+export type OrderItemInsert = Omit<OrderItem, "id" | "created_at"> & {
+  id?: string;
+  created_at?: string;
+};
+
+export type OrderItemUpdate = Partial<
+  Omit<OrderItemInsert, "id" | "order_id">
+>;
+
+export interface OrderWithItems extends Order {
+  order_items: OrderItem[];
+}
+
 export type AdminUser = {
   id: string;
   created_at: string;
@@ -169,7 +267,10 @@ export type Product = {
   featured: boolean;
   shopee_url: string | null;
   tiktok_url: string | null;
+  tiktok_shop_url: string | null;
   tokopedia_url: string | null;
+  lazada_url: string | null;
+  blibli_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -217,7 +318,10 @@ export type ProductInsert = {
   featured?: boolean;
   shopee_url?: string | null;
   tiktok_url?: string | null;
+  tiktok_shop_url?: string | null;
   tokopedia_url?: string | null;
+  lazada_url?: string | null;
+  blibli_url?: string | null;
 };
 
 export type ProductUpdate = Partial<ProductInsert>;
@@ -322,6 +426,39 @@ export interface Database {
           }
         ];
       };
+      payment_settings: {
+        Row: PaymentSettings;
+        Insert: PaymentSettingsInsert;
+        Update: PaymentSettingsUpdate;
+        Relationships: [];
+      };
+      orders: {
+        Row: Order;
+        Insert: OrderInsert;
+        Update: OrderUpdate;
+        Relationships: [];
+      };
+      order_items: {
+        Row: OrderItem;
+        Insert: OrderItemInsert;
+        Update: OrderItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       admin_users: {
         Row: AdminUser;
         Insert: { id: string; created_at?: string };
@@ -374,6 +511,43 @@ export interface Database {
       update_cart_item_quantity: {
         Args: { p_cart_item_id: string; p_quantity: number };
         Returns: CartItem;
+      };
+      is_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      place_order: {
+        Args: {
+          p_payment_method: PaymentMethod;
+          p_shipping_full_name: string;
+          p_shipping_phone: string;
+          p_shipping_address: string;
+          p_shipping_city: string;
+          p_shipping_province: string;
+          p_shipping_postal_code: string;
+        };
+        Returns: Order;
+      };
+      mark_order_paid: {
+        Args: { p_order_number: string };
+        Returns: Order;
+      };
+      set_order_discord_message_id: {
+        Args: { p_order_id: string; p_message_id: string };
+        Returns: Order;
+      };
+      admin_update_order: {
+        Args: {
+          p_order_id: string;
+          p_action:
+            | "approve_payment"
+            | "reject_payment"
+            | "mark_processing"
+            | "mark_shipped"
+            | "mark_completed"
+            | "cancel_order";
+        };
+        Returns: Order;
       };
     };
     Enums: {

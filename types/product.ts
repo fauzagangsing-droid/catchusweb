@@ -14,7 +14,6 @@ export interface Product {
   shortDescription: string;
   priceOld: string;
   priceNew: string;
-  buyUrl: string;
 }
 
 export type ModelFilter = "T-shirt" | "Sweater";

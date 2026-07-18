@@ -3,13 +3,13 @@
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 /**
- * Product image Storage helpers, used exclusively by the Product Image
- * Upload feature (components/admin/ImageUploader.tsx). Kept separate from
- * lib/admin-products.ts so the existing Product CRUD module is untouched.
+ * Shared image Storage helpers for authenticated admin upload features.
+ * Kept separate from CRUD services so their existing logic stays untouched.
  */
 
 export const PRODUCT_IMAGE_BUCKET = "product-images";
 export const BANNER_IMAGE_BUCKET = "banner-images";
+export const PAYMENT_IMAGE_BUCKET = "payment-assets";
 export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
@@ -165,6 +165,15 @@ export function uploadBannerImage(
   onProgress: (percent: number) => void
 ): CancellableUpload {
   return uploadImage(BANNER_IMAGE_BUCKET, bannerId, file, onProgress);
+}
+
+/** Uploads a QRIS image to the dedicated payment-assets bucket. */
+export function uploadPaymentImage(
+  paymentId: string,
+  file: File,
+  onProgress: (percent: number) => void
+): CancellableUpload {
+  return uploadImage(PAYMENT_IMAGE_BUCKET, paymentId, file, onProgress);
 }
 
 /** Best-effort delete — a missing/already-gone file is not treated as an error. */

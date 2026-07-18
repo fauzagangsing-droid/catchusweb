@@ -126,7 +126,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
           <Link href="/" className={styles.brand}>{brandName}</Link>
           <Link href="/#produk" className={styles.continueLink}>
             <i className="ri-arrow-left-line" aria-hidden="true" />
-            Continue Shopping
+            Lanjut Belanja
           </Link>
         </div>
       </header>
@@ -134,12 +134,12 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
       <main className={`container ${styles.main}`}>
         <div className={styles.titleRow}>
           <div>
-            <span className={styles.eyebrow}>Your order</span>
-            <h1>Shopping Cart</h1>
+            <span className={styles.eyebrow}>Pesanan Anda</span>
+            <h1>Keranjang Belanja</h1>
           </div>
           {!loading && items.length > 0 && (
             <span className={styles.itemCount}>
-              {totals.itemCount} {totals.itemCount === 1 ? "item" : "items"}
+              {totals.itemCount} barang
             </span>
           )}
         </div>
@@ -147,17 +147,17 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
         {error && <p className={styles.error} role="alert">{error}</p>}
 
         {loading ? (
-          <div className={styles.loading} role="status">Loading your cart...</div>
+          <div className={styles.loading} role="status">Memuat keranjang...</div>
         ) : items.length === 0 ? (
           <section className={styles.empty}>
             <i className="ri-shopping-cart-line" aria-hidden="true" />
-            <h2>Your cart is empty</h2>
-            <p>Explore the latest Catchus products and add your favorites.</p>
-            <Link href="/#produk">Continue Shopping</Link>
+            <h2>Keranjang Anda kosong</h2>
+            <p>Jelajahi produk terbaru Catchus dan tambahkan produk favorit Anda.</p>
+            <Link href="/#produk">Lanjut Belanja</Link>
           </section>
         ) : (
           <div className={styles.layout}>
-            <section className={styles.items} aria-label="Cart items">
+            <section className={styles.items} aria-label="Barang dalam keranjang">
               {items.map((item) => {
                 const product = item.product;
                 const itemBusy = busyItemId === item.id;
@@ -168,7 +168,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                     <div className={styles.imageWrap}>
                       <Image
                         src={getProductImage(item)}
-                        alt={product ? `${product.name} product image` : "Unavailable product"}
+                        alt={product ? `Gambar produk ${product.name}` : "Produk tidak tersedia"}
                         fill
                         sizes="(max-width: 640px) 96px, 130px"
                       />
@@ -180,25 +180,25 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                           {product.name}
                         </Link>
                       ) : (
-                        <strong className={styles.productName}>Product unavailable</strong>
+                        <strong className={styles.productName}>Produk tidak tersedia</strong>
                       )}
 
                       {(item.selected_size || item.selected_color) && (
                         <div className={styles.variants}>
-                          {item.selected_size && <span>Size: {item.selected_size}</span>}
-                          {item.selected_color && <span>Color: {item.selected_color}</span>}
+                          {item.selected_size && <span>Ukuran: {item.selected_size}</span>}
+                          {item.selected_color && <span>Warna: {item.selected_color}</span>}
                         </div>
                       )}
 
                       {product && <span className={styles.unitPrice}>{formatRupiah(product.price)}</span>}
 
                       <div className={styles.mobileActions}>
-                        <div className={styles.quantity} aria-label={`Quantity for ${product?.name ?? "product"}`}>
+                        <div className={styles.quantity} aria-label={`Jumlah ${product?.name ?? "produk"}`}>
                           <button
                             type="button"
                             onClick={() => changeQuantity(item, item.quantity - 1)}
                             disabled={itemBusy || item.quantity <= 1 || !product}
-                            aria-label="Decrease quantity"
+                            aria-label="Kurangi jumlah"
                           >
                             <i className="ri-subtract-line" aria-hidden="true" />
                           </button>
@@ -207,7 +207,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                             type="button"
                             onClick={() => changeQuantity(item, item.quantity + 1)}
                             disabled={itemBusy || !product || item.quantity >= product.stock}
-                            aria-label="Increase quantity"
+                            aria-label="Tambah jumlah"
                           >
                             <i className="ri-add-line" aria-hidden="true" />
                           </button>
@@ -219,7 +219,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                           disabled={itemBusy}
                         >
                           <i className="ri-delete-bin-6-line" aria-hidden="true" />
-                          Remove
+                          Hapus
                         </button>
                       </div>
                     </div>
@@ -228,7 +228,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                       <span>Subtotal</span>
                       <strong>{formatRupiah(itemSubtotal)}</strong>
                       {product && product.stock < item.quantity && (
-                        <small>Only {product.stock} in stock</small>
+                        <small>Stok tersisa {product.stock}</small>
                       )}
                     </div>
                   </article>
@@ -237,23 +237,23 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
             </section>
 
             <aside className={styles.summary}>
-              <h2>Order Summary</h2>
+              <h2>Ringkasan Pesanan</h2>
               <div className={styles.summaryLine}>
-                <span>Subtotal ({totals.itemCount} items)</span>
+                <span>Subtotal ({totals.itemCount} barang)</span>
                 <strong>{formatRupiah(totals.subtotal)}</strong>
               </div>
               <div className={styles.totalLine}>
-                <span>Grand Total</span>
+                <span>Total Keseluruhan</span>
                 <strong>{formatRupiah(totals.grandTotal)}</strong>
               </div>
-              <button type="button" disabled>
-                Checkout
-              </button>
-              <p>
-                {hasUnavailableItems
-                  ? "Remove unavailable items or adjust their quantity before checkout."
-                  : "Checkout will be available in the ordering phase."}
-              </p>
+              {hasUnavailableItems ? (
+                <button type="button" disabled>Lanjutkan Pesanan</button>
+              ) : (
+                <Link href="/checkout" className={styles.checkoutLink}>Lanjutkan Pesanan</Link>
+              )}
+              {hasUnavailableItems && (
+                <p>Hapus produk yang tidak tersedia atau sesuaikan jumlahnya sebelum checkout.</p>
+              )}
             </aside>
           </div>
         )}

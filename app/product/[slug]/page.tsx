@@ -77,10 +77,13 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const marketplaces = [
     { name: "Shopee", url: product.shopee_url, icon: "ri-shopping-bag-3-line" },
     { name: "Tokopedia", url: product.tokopedia_url, icon: "ri-store-2-line" },
-    { name: "TikTok Shop", url: product.tiktok_url, icon: "ri-tiktok-line" },
-  ].filter((marketplace): marketplace is { name: string; url: string; icon: string } =>
-    Boolean(marketplace.url)
-  );
+    { name: "TikTok Shop", url: product.tiktok_shop_url || product.tiktok_url, icon: "ri-tiktok-line" },
+    { name: "Lazada", url: product.lazada_url, icon: "ri-store-3-line" },
+    { name: "Blibli", url: product.blibli_url, icon: "ri-shopping-bag-line" },
+  ].flatMap((marketplace) => {
+    const url = marketplace.url?.trim();
+    return url ? [{ ...marketplace, url }] : [];
+  });
 
   const productJsonLd = buildProductJsonLd(product, settings);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -142,12 +145,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <p className={styles.shortDescription}>{product.short_description}</p>
             )}
 
-            <AddToCartButton
-              productId={product.id}
-              productName={product.name}
-              stock={product.stock}
-            />
-
             <div className={styles.informationBlock}>
               <span className={styles.sectionEyebrow}>Product Information</span>
             <dl className={styles.facts}>
@@ -158,14 +155,20 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </dl>
             </div>
 
+            <AddToCartButton
+              productId={product.id}
+              productName={product.name}
+              stock={product.stock}
+            />
+
             {marketplaces.length > 0 && (
               <div className={styles.marketplaces}>
-                <span>Buy this product</span>
+                <span>Beli di Marketplace</span>
                 <div className={styles.marketplaceButtons}>
                   {marketplaces.map((marketplace) => (
                     <a key={marketplace.name} href={marketplace.url} target="_blank" rel="noopener noreferrer">
                       <i className={marketplace.icon} />
-                      Buy on {marketplace.name}
+                      {marketplace.name}
                     </a>
                   ))}
                 </div>

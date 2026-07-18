@@ -1,8 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import ProdukCard from "@/components/ProdukCard";
-import QuickViewModal from "@/components/QuickViewModal";
 import type { Product } from "@/types/product";
 
 interface CategoryProductsProps {
@@ -16,9 +14,6 @@ export default function CategoryProducts({
   products,
   errorMessage,
 }: CategoryProductsProps) {
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const closeQuickView = useCallback(() => setQuickViewProduct(null), []);
-
   return (
     <main className="produk" id="produk">
       <div className="container">
@@ -36,16 +31,12 @@ export default function CategoryProducts({
                   key={product.id}
                   product={product}
                   visible
-                  onQuickView={setQuickViewProduct}
                 />
               ))
             )}
           </div>
         </div>
       </div>
-      {quickViewProduct && (
-        <QuickViewModal product={quickViewProduct} onClose={closeQuickView} />
-      )}
     </main>
   );
 }

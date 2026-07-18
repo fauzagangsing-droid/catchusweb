@@ -21,10 +21,6 @@ function resolveBadge(product: ProductWithRelations): string {
   return product.featured ? "Featured" : "";
 }
 
-function resolveBuyUrl(product: ProductWithRelations): string {
-  return product.shopee_url || product.tiktok_url || product.tokopedia_url || "#";
-}
-
 /**
  * Converts a Supabase product row (+ joined category/images) into the exact
  * shape ProdukCard.tsx already expects, so the presentation layer requires
@@ -42,6 +38,5 @@ export function toUiProduct(product: ProductWithRelations): UiProduct {
     shortDescription: product.short_description ?? "",
     priceOld: product.compare_price ? formatRupiah(product.compare_price) : "",
     priceNew: formatRupiah(product.price),
-    buyUrl: resolveBuyUrl(product),
   };
 }

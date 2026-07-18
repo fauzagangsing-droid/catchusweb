@@ -295,7 +295,9 @@ export interface ProductFormValues {
   featured: boolean;
   shopeeUrl: string;
   tokopediaUrl: string;
-  tiktokUrl: string;
+  tiktokShopUrl: string;
+  lazadaUrl: string;
+  blibliUrl: string;
   images: ProductImagesFieldValue;
 }
 
@@ -354,10 +356,15 @@ export function validateProductForm(
     errors.weight = "Weight must be a valid positive number.";
   }
 
-  const urlFields: Array<["shopeeUrl" | "tokopediaUrl" | "tiktokUrl", string]> = [
+  const urlFields: Array<[
+    "shopeeUrl" | "tokopediaUrl" | "tiktokShopUrl" | "lazadaUrl" | "blibliUrl",
+    string
+  ]> = [
     ["shopeeUrl", values.shopeeUrl],
     ["tokopediaUrl", values.tokopediaUrl],
-    ["tiktokUrl", values.tiktokUrl],
+    ["tiktokShopUrl", values.tiktokShopUrl],
+    ["lazadaUrl", values.lazadaUrl],
+    ["blibliUrl", values.blibliUrl],
   ];
 
   urlFields.forEach(([field, value]) => {

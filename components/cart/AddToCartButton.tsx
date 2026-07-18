@@ -21,12 +21,12 @@ export default function AddToCartButton({
 }: AddToCartButtonProps) {
   const router = useRouter();
   const { refreshCart } = useCart();
-  const [loading, setLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"cart" | "buy_now" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
 
-  async function handleAddToCart() {
-    setLoading(true);
+  async function handleAddToCart(buyNow = false) {
+    setPendingAction(buyNow ? "buy_now" : "cart");
     setMessage(null);
     setAdded(false);
 
@@ -44,14 +44,18 @@ export default function AddToCartButton({
 
       await addProductToCart(productId, 1, supabase);
       await refreshCart();
+      if (buyNow) {
+        router.push("/checkout");
+        return;
+      }
       setAdded(true);
-      setMessage(`${productName} was added to your cart.`);
+      setMessage(`${productName} berhasil ditambahkan ke keranjang.`);
     } catch (error) {
       setMessage(
         friendlyCartError(error instanceof Error ? error.message : "")
       );
     } finally {
-      setLoading(false);
+      setPendingAction(null);
     }
   }
 
@@ -59,21 +63,32 @@ export default function AddToCartButton({
 
   return (
     <div className={styles.wrapper}>
-      <button
-        type="button"
-        className={styles.button}
-        onClick={handleAddToCart}
-        disabled={loading || outOfStock}
-      >
-        <i className="ri-shopping-cart-2-line" aria-hidden="true" />
-        {outOfStock ? "Out of Stock" : loading ? "Adding..." : "Add To Cart"}
-      </button>
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => handleAddToCart(false)}
+          disabled={Boolean(pendingAction) || outOfStock}
+        >
+          <i className="ri-shopping-cart-2-line" aria-hidden="true" />
+          {outOfStock ? "Stok Habis" : pendingAction === "cart" ? "Menambahkan..." : "Tambah ke Keranjang"}
+        </button>
+        <button
+          type="button"
+          className={`${styles.button} ${styles.buyNow}`}
+          onClick={() => handleAddToCart(true)}
+          disabled={Boolean(pendingAction) || outOfStock}
+        >
+          <i className="ri-flashlight-line" aria-hidden="true" />
+          {outOfStock ? "Stok Habis" : pendingAction === "buy_now" ? "Memproses..." : "Beli Sekarang"}
+        </button>
+      </div>
       {message && (
         <p
           className={added ? styles.success : styles.error}
           role={added ? "status" : "alert"}
         >
-          {message} {added && <Link href="/cart">View cart</Link>}
+          {message} {added && <Link href="/cart">Lihat keranjang</Link>}
         </p>
       )}
     </div>

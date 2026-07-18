@@ -214,7 +214,9 @@ function ProductsContent() {
       status: values.status,
       shopee_url: values.shopeeUrl.trim() || null,
       tokopedia_url: values.tokopediaUrl.trim() || null,
-      tiktok_url: values.tiktokUrl.trim() || null,
+      tiktok_shop_url: values.tiktokShopUrl.trim() || null,
+      lazada_url: values.lazadaUrl.trim() || null,
+      blibli_url: values.blibliUrl.trim() || null,
     };
 
     const result =

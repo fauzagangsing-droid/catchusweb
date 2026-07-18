@@ -74,7 +74,10 @@ create table if not exists public.products (
   featured       boolean not null default false,
   shopee_url     text,
   tiktok_url     text,
+  tiktok_shop_url text,
   tokopedia_url  text,
+  lazada_url     text,
+  blibli_url     text,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
 

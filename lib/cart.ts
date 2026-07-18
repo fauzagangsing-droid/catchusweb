@@ -13,19 +13,19 @@ export function friendlyCartError(message: string): string {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("authentication required")) {
-    return "Please sign in to manage your cart.";
+    return "Silakan masuk untuk mengelola keranjang Anda.";
   }
   if (normalized.includes("exceeds available stock")) {
-    return "The requested quantity is greater than the available stock.";
+    return "Jumlah yang diminta melebihi stok yang tersedia.";
   }
   if (normalized.includes("product is not available")) {
-    return "This product is no longer available.";
+    return "Produk ini sudah tidak tersedia.";
   }
   if (normalized.includes("cart item is not available")) {
-    return "This cart item is no longer available.";
+    return "Barang ini sudah tidak tersedia di keranjang.";
   }
 
-  return "Unable to update your cart. Please try again.";
+  return "Keranjang tidak dapat diperbarui. Silakan coba lagi.";
 }
 
 export async function getCartCountSnapshot(

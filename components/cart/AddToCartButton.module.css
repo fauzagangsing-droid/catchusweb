@@ -2,6 +2,12 @@
   margin-top: 20px;
 }
 
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .button {
   width: 100%;
   min-height: 50px;
@@ -24,6 +30,16 @@
 .button:hover:not(:disabled) {
   background-color: transparent;
   color: #111;
+}
+
+.buyNow {
+  background-color: transparent;
+  color: #111;
+}
+
+.buyNow:hover:not(:disabled) {
+  background-color: #111;
+  color: #fff;
 }
 
 .button:disabled {
@@ -50,4 +66,10 @@
 .success a {
   color: inherit;
   font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
 }

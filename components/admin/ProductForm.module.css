@@ -49,6 +49,12 @@
   display: grid;
 }
 
+.marketplaceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
 .threeColumnRow {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -226,7 +232,8 @@
 @media (max-width: 700px) {
   .row,
   .threeColumnRow,
-  .sectionBody.row {
+  .sectionBody.row,
+  .marketplaceGrid {
     grid-template-columns: 1fr;
   }
 }

@@ -39,7 +39,9 @@ function toFormValues(product?: ProductWithRelations | null): TextFieldValues {
     featured: product?.featured ?? false,
     shopeeUrl: product?.shopee_url ?? "",
     tokopediaUrl: product?.tokopedia_url ?? "",
-    tiktokUrl: product?.tiktok_url ?? "",
+    tiktokShopUrl: product?.tiktok_shop_url ?? product?.tiktok_url ?? "",
+    lazadaUrl: product?.lazada_url ?? "",
+    blibliUrl: product?.blibli_url ?? "",
   };
 }
 
@@ -271,11 +273,13 @@ export default function ProductForm({
           <h3 id="marketplace-heading">Marketplace</h3>
           <p>Connect customers to this product on each supported sales channel.</p>
         </div>
-        <div className={styles.sectionBody}>
+        <div className={`${styles.sectionBody} ${styles.marketplaceGrid}`}>
           {([
             ["shopeeUrl", "Shopee URL", "https://shopee.co.id/..."] as const,
             ["tokopediaUrl", "Tokopedia URL", "https://tokopedia.com/..."] as const,
-            ["tiktokUrl", "TikTok Shop URL", "https://shop.tiktok.com/..."] as const,
+            ["tiktokShopUrl", "TikTok Shop URL", "https://shop.tiktok.com/..."] as const,
+            ["lazadaUrl", "Lazada URL", "https://www.lazada.co.id/..."] as const,
+            ["blibliUrl", "Blibli URL", "https://www.blibli.com/..."] as const,
           ]).map(([field, label, placeholder]) => (
             <div className={styles.field} key={field}>
               <label className={styles.label} htmlFor={`product-${field}`}>{label}</label>

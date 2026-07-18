@@ -1,8 +1,10 @@
 .page { min-height: 100vh; }
 .main { padding-top: 48px; padding-bottom: 70px; }
-.header { margin-bottom: 30px; }
+.header { margin-bottom: 30px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .header h1 { font-size: 38px; margin-bottom: 8px; }
 .header p { color: #666; }
+.ordersLink { padding: 10px 14px; border: 2px solid #111; border-radius: 7px; color: #111; display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.ordersLink:hover { background: #111; color: #fff; }
 .grid { display: grid; grid-template-columns: minmax(240px, .75fr) minmax(0, 1.5fr); gap: 28px; align-items: start; }
 .stack { display: grid; gap: 24px; }
 .card { background: #fff; padding: 28px; border-radius: 16px; box-shadow: 0 8px 22px rgba(0, 0, 0, .07); }
@@ -53,4 +55,5 @@
 
 @media (max-width: 520px) {
   .card { padding: 22px 18px; border-radius: 13px; }
+  .header { align-items: flex-start; flex-direction: column; }
 }

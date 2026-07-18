@@ -1,0 +1,41 @@
+.shell { display: flex; min-height: 100vh; background: #f1f1f1; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.content { width: 100%; max-width: 980px; margin-inline: auto; padding: 28px 32px 48px; display: grid; gap: 18px; }
+.form { display: grid; gap: 20px; }
+.card { overflow: hidden; border-radius: 13px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,.05); }
+.cardHeader { padding: 19px 21px; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 11px; }
+.cardHeader > i { width: 36px; height: 36px; flex: 0 0 auto; border-radius: 8px; background: #f1f1f1; display: grid; place-items: center; font-size: 18px; }
+.cardHeader h2 { font-size: 17px; }
+.cardHeader p { margin-top: 3px; color: #777; font-size: 11px; }
+.cardBody { padding: 21px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.field { display: grid; gap: 7px; }
+.field label { font-size: 12px; font-weight: 600; }
+.field input, .field textarea { width: 100%; padding: 0 12px; border: 1px solid #d8d8d8; border-radius: 8px; background: #fff; color: #111; font: inherit; font-size: 13px; outline: none; }
+.field input { height: 42px; }
+.field textarea { padding-block: 11px; resize: vertical; }
+.field input:focus, .field textarea:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+.fullWidth { grid-column: 1 / -1; }
+.qrisUpload { display: flex; align-items: center; gap: 24px; padding: 18px; border: 1px dashed #c9c9c9; border-radius: 11px; background: #fafafa; }
+.qrisPreview { width: 180px; aspect-ratio: 1; flex: 0 0 auto; overflow: hidden; border: 1px solid #e1e1e1; border-radius: 10px; background: #fff; display: grid; place-items: center; }
+.qrisPreview img { width: 100%; height: 100%; object-fit: contain; }
+.qrisPreview > div { display: grid; justify-items: center; gap: 8px; color: #888; font-size: 11px; }
+.qrisPreview i { font-size: 38px; }
+.uploadControls { display: grid; justify-items: start; gap: 10px; }
+.uploadControls > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.uploadControls small { color: #777; font-size: 11px; }
+.uploadButton, .removeButton { min-height: 38px; padding: 8px 13px; border: 1px solid #111; border-radius: 7px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.uploadButton { background: #111; color: #fff; }
+.removeButton { background: #fff; color: #a5222d; border-color: #dfb9bc; }
+.removeButton:disabled { opacity: .6; cursor: not-allowed; }
+.progress { width: min(280px, 100%); height: 5px; overflow: hidden; border-radius: 999px; background: #e4e4e4; }
+.progress span { display: block; height: 100%; border-radius: inherit; background: #111; transition: width .2s ease; }
+.actions { display: flex; justify-content: flex-end; }
+.actions button { min-height: 44px; padding: 9px 17px; border: 2px solid #111; border-radius: 7px; background: #111; color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.actions button:hover:not(:disabled) { background: #fff; color: #111; }
+.actions button:disabled { opacity: .6; cursor: not-allowed; }
+.banner { padding: 12px 14px; border-radius: 8px; font-size: 12px; }
+.error { border: 1px solid #efc5c5; background: #fdecee; color: #a5222d; }
+.success { border: 1px solid #c5e8cb; background: #eef9f0; color: #236331; }
+.loading { min-height: 250px; border-radius: 12px; background: #fff; display: grid; place-items: center; color: #777; font-size: 13px; }
+@media (max-width: 900px) { .content { padding: 22px 20px 40px; } }
+@media (max-width: 600px) { .content { padding-inline: 14px; } .cardBody { grid-template-columns: 1fr; padding: 18px; } .qrisUpload { align-items: stretch; flex-direction: column; } .qrisPreview { width: min(100%, 280px); margin-inline: auto; } .uploadControls { justify-items: stretch; } .uploadButton, .removeButton { text-align: center; } }

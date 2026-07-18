@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import ChangePasswordForm from "@/components/account/ChangePasswordForm";
 import DeleteAccount from "@/components/account/DeleteAccount";
@@ -28,8 +29,13 @@ export default function AccountContent({
   return (
     <main className={`container ${styles.main}`}>
       <div className={styles.header}>
-        <h1>My Account</h1>
-        <p>Manage your profile and account security.</p>
+        <div>
+          <h1>My Account</h1>
+          <p>Manage your profile and account security.</p>
+        </div>
+        <Link href="/account/orders" className={styles.ordersLink}>
+          <i className="ri-file-list-3-line" aria-hidden="true" /> Pesanan Saya
+        </Link>
       </div>
       {verified && <div className={`${styles.message} ${styles.success}`} role="status">Email verified successfully. Welcome to your account.</div>}
       <div className={styles.grid}>
