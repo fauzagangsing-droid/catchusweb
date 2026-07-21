@@ -4,7 +4,7 @@ import { friendlyOrderError } from "@/lib/orders";
 import { createCustomerServerClient } from "@/lib/supabase/customer-server";
 
 interface PaidRouteContext {
-  params: { orderNumber: string };
+  params: { id: string };
 }
 
 export async function POST(request: NextRequest, { params }: PaidRouteContext) {
@@ -13,28 +13,19 @@ export async function POST(request: NextRequest, { params }: PaidRouteContext) {
   }
 
   const supabase = createCustomerServerClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (!user || userError) {
-    return NextResponse.json(
-      { error: "Sesi Anda telah berakhir. Silakan masuk kembali." },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Sesi Anda telah berakhir. Silakan masuk kembali." }, { status: 401 });
   }
 
+  // `id` is the shared App Router slug name; this legacy endpoint still
+  // receives the order number as its URL value for backward compatibility.
   const { data: order, error } = await supabase.rpc("mark_order_paid", {
-    p_order_number: params.orderNumber,
+    p_order_number: params.id,
   });
-
   if (error || !order) {
-    return NextResponse.json(
-      { error: friendlyOrderError(error?.message ?? "") },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: friendlyOrderError(error?.message ?? "") }, { status: 400 });
   }
-
   await updateOrderDiscordNotification(order);
   return NextResponse.json({ success: true });
 }

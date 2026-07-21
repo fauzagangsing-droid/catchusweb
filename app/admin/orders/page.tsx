@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import AdminPaymentProof from "@/components/admin/AdminPaymentProof";
 import OrderShippingSection from "@/components/admin/OrderShippingSection";
 import RequireAdminAuth from "@/components/admin/RequireAdminAuth";
 import Sidebar from "@/components/admin/Sidebar";
@@ -62,6 +63,7 @@ function OrdersContent() {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | "all">("all");
   const [orderStatus, setOrderStatus] = useState<OrderStatus | "all">("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSearch(searchInput), 350);
@@ -82,10 +84,17 @@ function OrdersContent() {
   }, [loadOrders]);
 
   async function handleAction(order: OrderWithItems, action: AdminOrderAction) {
+    let rejectionReason: string | undefined;
+    if (action === "reject_payment") {
+      const reason = window.prompt("Masukkan alasan penolakan pembayaran:")?.trim();
+      if (!reason) { setError("Alasan penolakan wajib diisi."); return; }
+      rejectionReason = reason;
+    }
     setUpdatingId(order.id);
     setError(null);
-    const result = await runAdminOrderAction(order.id, action);
+    const result = await runAdminOrderAction(order.id, action, rejectionReason);
     if (result.error) setError(result.error);
+    else { setToast("Pesanan berhasil diperbarui."); window.setTimeout(() => setToast(null), 3000); }
     await loadOrders();
     setUpdatingId(null);
   }
@@ -145,7 +154,7 @@ function OrdersContent() {
                     <div className={styles.overview}>
                       <div><span>Pelanggan</span><strong>{order.shipping_full_name}</strong><small>{order.customer_email}<br />{order.shipping_phone}</small></div>
                       <div><span>Pembayaran</span><strong>{PAYMENT_METHOD_LABELS[order.payment_method]}</strong><small>{PAYMENT_STATUS_LABELS[order.payment_status]}</small></div>
-                      <div><span>Total</span><strong>{formatRupiah(order.total)}</strong><small>Pengiriman {formatRupiah(order.shipping_cost)}</small></div>
+                      <div><span>Total</span><strong>{formatRupiah(order.total)}</strong><small>Pengiriman {formatRupiah(order.shipping_cost)}{order.voucher_code ? ` · Voucher ${order.voucher_code}: -${formatRupiah(order.discount_amount)}` : ""}</small></div>
                       <div><span>Diperbarui</span><strong>{new Date(order.updated_at).toLocaleDateString("id-ID")}</strong><small>{new Date(order.updated_at).toLocaleTimeString("id-ID")}</small></div>
                     </div>
 
@@ -162,6 +171,10 @@ function OrdersContent() {
                           handleShippingSave(order, trackingNumber, shippingStatus)
                         }
                       />
+                      {order.payment_proof_url && (
+                        <AdminPaymentProof orderId={order.id} notes={order.payment_notes} uploadedAt={order.payment_uploaded_at} />
+                      )}
+                      {order.payment_rejection_reason && <p className={styles.error}>Alasan penolakan: {order.payment_rejection_reason}</p>}
                     </details>
 
                     {actions.length > 0 && (
@@ -178,6 +191,7 @@ function OrdersContent() {
               })}
             </div>
           )}
+          {toast && <div className={styles.toast} role="status">{toast}</div>}
         </div>
       </div>
     </div>

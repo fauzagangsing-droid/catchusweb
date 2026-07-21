@@ -30,6 +30,7 @@ const MENU_ITEMS: MenuItem[] = [
   { label: "Kategori", href: "/admin/categories", icon: "ri-price-tag-3-line" },
   { label: "Banner", href: "/admin/banners", icon: "ri-image-2-line", comingSoon: true },
   { label: "Pesanan", href: "/admin/orders", icon: "ri-shopping-cart-2-line" },
+  { label: "Voucher", href: "/admin/vouchers", icon: "ri-coupon-3-line" },
   { label: "Pengaturan", href: "/admin/settings", icon: "ri-settings-3-line" },
   { label: "Pembayaran", href: "/admin/settings/payment", icon: "ri-bank-card-line" },
 ];

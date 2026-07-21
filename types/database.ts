@@ -186,6 +186,13 @@ export type Order = {
   total: number;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
+  payment_proof_url: string | null;
+  payment_uploaded_at: string | null;
+  payment_notes: string | null;
+  payment_rejection_reason: string | null;
+  voucher_id: string | null;
+  voucher_code: string | null;
+  discount_amount: number;
   order_status: OrderStatus;
   discord_message_id: string | null;
   created_at: string;
@@ -265,6 +272,59 @@ export type OrderItemUpdate = Partial<
 export interface OrderWithItems extends Order {
   order_items: OrderItem[];
 }
+
+export type VoucherType = "percentage" | "fixed";
+
+export type Voucher = {
+  id: string;
+  code: string;
+  type: VoucherType;
+  value: number;
+  minimum_purchase: number;
+  maximum_discount: number | null;
+  usage_limit: number | null;
+  used_count: number;
+  starts_at: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type VoucherInsert = Omit<Voucher, "id" | "used_count" | "created_at" | "updated_at"> & {
+  id?: string;
+  used_count?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+export type VoucherUpdate = Partial<Omit<VoucherInsert, "id">>;
+
+export type VoucherUsage = {
+  id: string;
+  voucher_id: string;
+  order_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type ProductReview = {
+  id: string;
+  product_id: string;
+  user_id: string;
+  order_id: string;
+  rating: number;
+  review: string;
+  images: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProductReviewInsert = Omit<ProductReview, "id" | "created_at" | "updated_at"> & {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+export type ProductReviewUpdate = Partial<Pick<ProductReview, "rating" | "review" | "images">>;
 
 export type AdminUser = {
   id: string;
@@ -524,6 +584,24 @@ export interface Database {
         Update: ShippingAddressUpdate;
         Relationships: [];
       };
+      vouchers: {
+        Row: Voucher;
+        Insert: VoucherInsert;
+        Update: VoucherUpdate;
+        Relationships: [];
+      };
+      voucher_usages: {
+        Row: VoucherUsage;
+        Insert: Omit<VoucherUsage, "id" | "created_at"> & { id?: string; created_at?: string };
+        Update: Partial<Omit<VoucherUsage, "id">>;
+        Relationships: [];
+      };
+      product_reviews: {
+        Row: ProductReview;
+        Insert: ProductReviewInsert;
+        Update: ProductReviewUpdate;
+        Relationships: [];
+      };
       admin_users: {
         Row: AdminUser;
         Insert: { id: string; created_at?: string };
@@ -592,6 +670,7 @@ export interface Database {
           p_shipping_estimation: string | null;
           p_shipping_weight: number;
           p_destination_village_code: string;
+          p_voucher_code: string | null;
         };
         Returns: Order;
       };
@@ -613,6 +692,7 @@ export interface Database {
             | "mark_shipped"
             | "mark_completed"
             | "cancel_order";
+          p_rejection_reason: string | null;
         };
         Returns: Order;
       };

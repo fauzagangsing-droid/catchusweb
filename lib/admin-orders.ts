@@ -46,7 +46,7 @@ export async function getAdminOrders(filters: AdminOrderFilters): Promise<{
 async function updateAdminOrder(
   orderId: string,
   payload:
-    | { action: AdminOrderAction }
+    | { action: AdminOrderAction; rejectionReason?: string }
     | {
         action: "save_shipping";
         trackingNumber: string;
@@ -85,9 +85,22 @@ async function updateAdminOrder(
 
 export async function runAdminOrderAction(
   orderId: string,
-  action: AdminOrderAction
+  action: AdminOrderAction,
+  rejectionReason?: string
 ): Promise<{ data: Order | null; error: string | null }> {
-  return updateAdminOrder(orderId, { action });
+  return updateAdminOrder(orderId, { action, rejectionReason });
+}
+
+export async function getAdminPaymentProofUrl(orderId: string): Promise<string | null> {
+  const { data: { session } } = await supabaseBrowser.auth.getSession();
+  if (!session) return null;
+  const response = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) return null;
+  const result = (await response.json()) as { url?: string | null };
+  return result.url ?? null;
 }
 
 export async function saveAdminOrderShipping(

@@ -94,3 +94,9 @@
 .loading { color: #666; font-size: 14px; }
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .summary { position: static; } }
 @media (max-width: 600px) { .headerInner { min-height: 66px; } .brand { font-size: 24px; } .backLink { font-size: 12px; } .main { padding-top: 28px; padding-bottom: 55px; } .grid { grid-template-columns: 1fr; } .cardBody, .paymentOptions, .shippingOptions { padding: 18px; } .summary { padding: 19px; } .addressCard { grid-template-columns: auto minmax(0,1fr); } .addressActions { grid-column: 2; } .shippingOption { grid-template-columns: auto minmax(0,1fr); } .shippingOption > b { grid-column: 2; } }
+.voucherRow { display: flex; gap: 10px; }
+.voucherRow input { min-width: 0; flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; text-transform: uppercase; }
+.voucherRow button { padding: 0 18px; border: 0; border-radius: 8px; background: #111; color: #fff; font-weight: 700; }
+.voucherRow button:disabled { opacity: .55; }
+.voucherSuccess { margin-top: 10px; color: #1a7a34; font-size: 13px; font-weight: 700; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 100; padding: 13px 16px; border-radius: 9px; background: #111; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.2); }

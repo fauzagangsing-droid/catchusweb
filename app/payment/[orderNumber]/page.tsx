@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import PaymentConfirmationButton from "@/components/orders/PaymentConfirmationButton";
+import PaymentProofUploader from "@/components/orders/PaymentProofUploader";
 import QrisDownloadButton from "@/components/orders/QrisDownloadButton";
 import { formatRupiah } from "@/lib/adapters";
 import { getCustomerOrder } from "@/lib/orders";
@@ -44,7 +44,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
   const order = orderResult.data;
   const payment = paymentResult.data;
   const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
-  const canConfirmPayment =
+  const canUploadProof =
     order.order_status === "pending_payment" &&
     (order.payment_status === "pending" || order.payment_status === "rejected");
 
@@ -112,17 +112,17 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
               <ol>
                 <li>Bayar tepat sebesar {formatRupiah(order.total)} melalui metode di atas.</li>
                 <li>Simpan bukti pembayaran hingga pembayaran disetujui.</li>
-                <li>Klik &ldquo;Saya Sudah Bayar&rdquo; setelah menyelesaikan pembayaran.</li>
+                <li>Upload bukti pembayaran agar pesanan dapat diverifikasi.</li>
               </ol>
             </div>
 
-            {canConfirmPayment ? (
-              <PaymentConfirmationButton orderNumber={order.order_number} />
-            ) : (
-              <div className={styles.notice} role="status">
-                Status pembayaran: {PAYMENT_STATUS_LABELS[order.payment_status]}
-              </div>
-            )}
+            <PaymentProofUploader
+              orderId={order.id}
+              canUpload={canUploadProof}
+              hasExistingProof={Boolean(order.payment_proof_url)}
+              initialNotes={order.payment_notes ?? ""}
+              rejectionReason={order.payment_rejection_reason}
+            />
           </section>
 
           <aside className={styles.summary}>
@@ -132,6 +132,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
               <div><span>Status Pesanan</span><strong>{ORDER_STATUS_LABELS[order.order_status]}</strong></div>
               <div><span>Subtotal</span><strong>{formatRupiah(order.subtotal)}</strong></div>
               <div><span>Pengiriman</span><strong>{formatRupiah(order.shipping_cost)}</strong></div>
+              {order.voucher_code && <div><span>Voucher ({order.voucher_code})</span><strong>-{formatRupiah(order.discount_amount)}</strong></div>}
               <div className={styles.total}><span>Total</span><strong>{formatRupiah(order.total)}</strong></div>
             </div>
             <div className={styles.shipping}>

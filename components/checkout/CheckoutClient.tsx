@@ -104,6 +104,11 @@ export default function CheckoutClient({
   const [error, setError] = useState<string | null>(null);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [quoteVersion, setQuoteVersion] = useState(0);
+  const [voucherInput, setVoucherInput] = useState("");
+  const [voucher, setVoucher] = useState<{ code: string; discount: number } | null>(null);
+  const [validatingVoucher, setValidatingVoucher] = useState(false);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -149,7 +154,8 @@ export default function CheckoutClient({
   }, [selectedAddress, items.length, quoteVersion, totals.totalWeight]);
 
   const shippingCost = selectedOption?.cost ?? 0;
-  const total = totals.subtotal + shippingCost;
+  const discount = voucher?.discount ?? 0;
+  const total = Math.max(totals.subtotal + shippingCost - discount, 0);
   const hasUnavailableItems = items.some(
     (item) => !item.product || item.product.stock < item.quantity
   );
@@ -164,6 +170,18 @@ export default function CheckoutClient({
       "";
     setSelectedAddressId(nextSelected);
     setSelectedOption(null);
+  }
+
+  async function applyVoucher() {
+    if (!voucherInput.trim()) { setVoucherError("Masukkan kode voucher."); return; }
+    setValidatingVoucher(true); setVoucherError(null);
+    try {
+      const response = await fetch("/api/vouchers/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: voucherInput, subtotal: totals.subtotal }) });
+      const result = (await response.json()) as { code?: string; discount?: number; error?: string };
+      if (!response.ok || !result.code || typeof result.discount !== "number") throw new Error(result.error ?? "Voucher tidak valid.");
+      setVoucher({ code: result.code, discount: result.discount }); setVoucherInput(result.code); setToast("Voucher berhasil diterapkan."); window.setTimeout(() => setToast(null), 3000);
+    } catch (voucherFailure) { setVoucher(null); setVoucherError(voucherFailure instanceof Error ? voucherFailure.message : "Voucher tidak valid."); }
+    finally { setValidatingVoucher(false); }
   }
 
   async function placeOrder() {
@@ -190,6 +208,7 @@ export default function CheckoutClient({
           addressId: selectedAddress.id,
           shippingQuoteToken: selectedOption.quoteToken,
           paymentMethod,
+          voucherCode: voucher?.code,
         }),
       });
       const result = (await response.json()) as { orderNumber?: string; error?: string };
@@ -235,6 +254,18 @@ export default function CheckoutClient({
         ) : (
           <div className={styles.layout}>
             <div className={styles.formColumn}>
+              <section className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <i className="ri-coupon-3-line" aria-hidden="true" />
+                  <div><h2>Voucher</h2><p>Gunakan kode promo sebelum membuat pesanan.</p></div>
+                </div>
+                <div className={styles.cardBody}>
+                  <div className={styles.voucherRow}><input value={voucherInput} onChange={(event) => { setVoucherInput(event.target.value.toUpperCase()); setVoucher(null); setVoucherError(null); }} placeholder="KODE VOUCHER" disabled={validatingVoucher || submitting} /><button type="button" onClick={() => void applyVoucher()} disabled={validatingVoucher || submitting}>{validatingVoucher ? "Memeriksa..." : "Gunakan"}</button></div>
+                  {voucherError && <p className={styles.quoteError} role="alert">{voucherError}</p>}
+                  {voucher && <p className={styles.voucherSuccess}>{voucher.code} diterapkan: -{formatRupiah(voucher.discount)}</p>}
+                </div>
+              </section>
+
               <section className={styles.card}>
                 <div className={styles.cardHeader}>
                   <i className="ri-map-pin-line" aria-hidden="true" />
@@ -342,6 +373,7 @@ export default function CheckoutClient({
               <div className={styles.costs}>
                 <div><span>Subtotal</span><strong>{formatRupiah(totals.subtotal)}</strong></div>
                 <div><span>Total Berat</span><strong>{totals.totalWeight.toFixed(2)} kg</strong></div>
+                {voucher && <div><span>Diskon ({voucher.code})</span><strong>-{formatRupiah(discount)}</strong></div>}
                 <div><span>Pengiriman</span><strong>{selectedOption ? formatRupiah(shippingCost) : "Belum dipilih"}</strong></div>
                 <div className={styles.total}><span>Total</span><strong>{formatRupiah(total)}</strong></div>
               </div>
@@ -357,6 +389,7 @@ export default function CheckoutClient({
           </div>
         )}
       </main>
+      {toast && <div className={styles.toast} role="status">{toast}</div>}
     </div>
   );
 }

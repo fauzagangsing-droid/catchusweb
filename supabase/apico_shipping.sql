@@ -344,10 +344,8 @@ begin
       v_cart_item.quantity, v_cart_item.price, v_item_subtotal
     );
 
-    update public.products
-    set stock = stock - v_cart_item.quantity,
-      status = case when stock - v_cart_item.quantity = 0 then 'out_of_stock' else status end
-    where id = v_cart_item.product_id;
+    -- Stock is validated here but deducted only after admin approves payment.
+    -- See commerce_extensions.sql for the atomic paid-stock transition.
   end loop;
 
   update public.orders set subtotal = v_subtotal, total = v_subtotal + p_shipping_cost

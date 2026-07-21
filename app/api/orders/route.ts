@@ -12,6 +12,7 @@ function isCheckoutPayload(value: unknown): value is CheckoutFormValues {
   return (
     typeof payload.addressId === "string" &&
     typeof payload.shippingQuoteToken === "string" &&
+    (payload.voucherCode === undefined || typeof payload.voucherCode === "string") &&
     (payload.paymentMethod === "qris" ||
       payload.paymentMethod === "dana" ||
       payload.paymentMethod === "bank_transfer")
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
       p_shipping_estimation: quote.estimation,
       p_shipping_weight: quote.weight,
       p_destination_village_code: quote.destinationVillageCode,
+      p_voucher_code: payload.voucherCode?.trim() || null,
     });
 
   if (error || !order) {

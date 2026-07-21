@@ -17,6 +17,7 @@ export interface CheckoutFormValues {
   addressId: string;
   shippingQuoteToken: string;
   paymentMethod: PaymentMethod;
+  voucherCode?: string;
 }
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

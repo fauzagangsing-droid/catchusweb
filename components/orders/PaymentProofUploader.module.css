@@ -1,0 +1,13 @@
+.card { margin-top: 22px; padding: 22px; border: 1px solid #e1e1e1; border-radius: 14px; background: #fff; }
+.card h2 { margin-top: 4px; font-size: 21px; }
+.card > div > span { color: #888; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.preview { position: relative; width: 100%; max-width: 440px; aspect-ratio: 4 / 3; margin-top: 16px; overflow: hidden; border-radius: 10px; background: #eee; }
+.preview img { object-fit: contain; }
+.card form { margin-top: 18px; display: grid; gap: 14px; }
+.card label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; }
+.card input, .card textarea { width: 100%; padding: 11px; border: 1px solid #ccc; border-radius: 8px; background: #fff; font: inherit; }
+.card button { min-height: 44px; border: 0; border-radius: 8px; background: #111; color: #fff; font-weight: 700; cursor: pointer; }
+.card button:disabled { opacity: .55; cursor: wait; }
+.error, .rejected { margin-top: 12px; color: #a51d2d; font-size: 13px; }
+.notice, .loading { margin-top: 14px; color: #666; font-size: 13px; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 100; padding: 13px 16px; border-radius: 9px; background: #111; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.2); }

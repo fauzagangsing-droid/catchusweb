@@ -99,6 +99,11 @@ function createOrderEmbed(order: Order) {
         value: formatRupiah(order.total),
         inline: true,
       },
+      ...(order.voucher_code ? [{
+        name: "Voucher",
+        value: `${order.voucher_code} (-${formatRupiah(order.discount_amount)})`,
+        inline: true,
+      }] : []),
       {
         name: "💳 Metode Pembayaran",
         value: PAYMENT_METHOD_LABELS[order.payment_method],
@@ -114,6 +119,22 @@ function createOrderEmbed(order: Order) {
         value: ORDER_STATUS_LABELS[order.order_status],
         inline: true,
       },
+      ...(order.payment_uploaded_at ? [{
+        name: "Bukti Pembayaran",
+        value: `Diunggah ${new Intl.DateTimeFormat("id-ID", {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: "Asia/Jakarta",
+        }).format(new Date(order.payment_uploaded_at))}${
+          order.payment_notes ? `\nCatatan: ${order.payment_notes}` : ""
+        }`,
+        inline: false,
+      }] : []),
+      ...(order.payment_rejection_reason ? [{
+        name: "Alasan Penolakan",
+        value: order.payment_rejection_reason,
+        inline: false,
+      }] : []),
       {
         name: "🕒 Dibuat Pada",
         value: new Intl.DateTimeFormat("id-ID", {

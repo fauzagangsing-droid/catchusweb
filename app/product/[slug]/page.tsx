@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import ProductGallery from "@/components/ProductGallery";
 import AddToCartButton from "@/components/cart/AddToCartButton";
+import ProductReviews from "@/components/reviews/ProductReviews";
 import { formatRupiah } from "@/lib/adapters";
 import { getProductBySlug, getRelatedProducts, getWebsiteSettings } from "@/lib/queries";
 import {
@@ -196,6 +197,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </section>
           </div>
         </section>
+
+        <ProductReviews productId={product.id} />
 
         {(relatedProducts?.length ?? 0) > 0 && (
           <section className={styles.relatedSection}>

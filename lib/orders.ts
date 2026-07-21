@@ -16,6 +16,15 @@ export function friendlyOrderError(message: string): string {
   if (normalized.includes("exceeds available stock")) {
     return "Jumlah produk melebihi stok yang tersedia. Periksa keranjang lalu coba lagi.";
   }
+  if (normalized.includes("jumlah produk melebihi stok")) {
+    return "Jumlah produk melebihi stok yang tersedia. Periksa keranjang lalu coba lagi.";
+  }
+  if (normalized.includes("voucher")) {
+    return message || "Voucher tidak dapat digunakan.";
+  }
+  if (normalized.includes("alasan penolakan")) {
+    return "Alasan penolakan pembayaran wajib diisi.";
+  }
   if (normalized.includes("payment method is not configured")) {
     return "Metode pembayaran yang dipilih sedang tidak tersedia.";
   }

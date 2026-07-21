@@ -61,9 +61,10 @@ export default function CustomerOrders({ orders, error }: CustomerOrdersProps) {
                 <div><span>Pembayaran</span><strong>{PAYMENT_METHOD_LABELS[order.payment_method]}</strong></div>
                 <div><span>Dikirim ke</span><strong>{order.shipping_city}, {order.shipping_province}</strong></div>
                 <div><span>Total</span><strong>{formatRupiah(order.total)}</strong></div>
-                {order.order_status === "pending_payment" && (
-                  <Link href={`/payment/${order.order_number}`}>Lanjutkan Pembayaran</Link>
-                )}
+                {order.voucher_code && <div><span>Voucher</span><strong>{order.voucher_code} (-{formatRupiah(order.discount_amount)})</strong></div>}
+                <Link href={`/payment/${order.order_number}`}>
+                  {order.order_status === "pending_payment" ? "Lanjutkan Pembayaran" : "Lihat Detail Pembayaran"}
+                </Link>
               </div>
 
               {(order.courier_code || order.shipping_courier) && (
