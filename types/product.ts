@@ -14,6 +14,7 @@ export interface Product {
   shortDescription: string;
   priceOld: string;
   priceNew: string;
+  weight: number;
 }
 
 export type ModelFilter = "T-shirt" | "Sweater";

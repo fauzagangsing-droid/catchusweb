@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createCustomerBrowserClient } from "@/lib/supabase/customer-browser";
 import type { Database, CartItemWithProduct } from "@/types/database";
 import type { CartCountSnapshot, CartData, CartTotals } from "@/types/cart";
+import { resolveProductWeightKg } from "@/lib/product-weight";
 
 type CustomerSupabaseClient = SupabaseClient<Database, "public">;
 
@@ -146,12 +147,16 @@ export function calculateCartTotals(items: CartItemWithProduct[]): CartTotals {
   return items.reduce<CartTotals>(
     (totals, item) => {
       const itemSubtotal = item.product ? item.product.price * item.quantity : 0;
+      const itemWeight = item.product
+        ? resolveProductWeightKg(item.product.weight) * item.quantity
+        : 0;
       return {
         itemCount: totals.itemCount + item.quantity,
         subtotal: totals.subtotal + itemSubtotal,
         grandTotal: totals.grandTotal + itemSubtotal,
+        totalWeight: totals.totalWeight + itemWeight,
       };
     },
-    { itemCount: 0, subtotal: 0, grandTotal: 0 }
+    { itemCount: 0, subtotal: 0, grandTotal: 0, totalWeight: 0 }
   );
 }

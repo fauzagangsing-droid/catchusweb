@@ -4,6 +4,7 @@ import type {
   OrderStatus,
   OrderWithItems,
   PaymentStatus,
+  ShippingStatus,
 } from "@/types/database";
 import type { AdminOrderAction } from "@/types/order";
 
@@ -49,6 +50,7 @@ async function updateAdminOrder(
     | {
         action: "save_shipping";
         trackingNumber: string;
+        shippingStatus: ShippingStatus;
       }
 ): Promise<{ data: Order | null; error: string | null }> {
   const {
@@ -90,10 +92,12 @@ export async function runAdminOrderAction(
 
 export async function saveAdminOrderShipping(
   orderId: string,
-  trackingNumber: string
+  trackingNumber: string,
+  shippingStatus: ShippingStatus
 ): Promise<{ data: Order | null; error: string | null }> {
   return updateAdminOrder(orderId, {
     action: "save_shipping",
     trackingNumber,
+    shippingStatus,
   });
 }

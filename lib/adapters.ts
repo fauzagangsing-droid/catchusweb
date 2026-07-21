@@ -38,5 +38,6 @@ export function toUiProduct(product: ProductWithRelations): UiProduct {
     shortDescription: product.short_description ?? "",
     priceOld: product.compare_price ? formatRupiah(product.compare_price) : "",
     priceNew: formatRupiah(product.price),
+    weight: product.weight,
   };
 }

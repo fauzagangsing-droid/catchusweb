@@ -16,6 +16,7 @@ import type {
   OrderStatus,
   OrderWithItems,
   PaymentStatus,
+  ShippingStatus,
 } from "@/types/database";
 import type { AdminOrderAction } from "@/types/order";
 import {
@@ -91,13 +92,15 @@ function OrdersContent() {
 
   async function handleShippingSave(
     order: OrderWithItems,
-    trackingNumber: string
+    trackingNumber: string,
+    shippingStatus: ShippingStatus
   ) {
     setUpdatingId(order.id);
     setError(null);
     const result = await saveAdminOrderShipping(
       order.id,
-      trackingNumber
+      trackingNumber,
+      shippingStatus
     );
     if (result.error) setError(result.error);
     await loadOrders();
@@ -149,14 +152,14 @@ function OrdersContent() {
                     <details className={styles.details}>
                       <summary>Lihat detail pelanggan, produk, dan pengiriman</summary>
                       <div className={styles.detailGrid}>
-                        <section><h3>Informasi Pengiriman</h3><strong>{order.shipping_full_name}</strong><p>{order.shipping_address}<br />{order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}</p><span>{order.shipping_phone}</span></section>
+                        <section><h3>Informasi Pengiriman</h3><strong>{order.shipping_full_name}</strong><p>{order.shipping_address}<br />{order.shipping_village && `${order.shipping_village}, `}{order.shipping_district && `${order.shipping_district}, `}{order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}</p><span>{order.shipping_phone}</span></section>
                         <section><h3>Produk yang Dipesan</h3><div className={styles.products}>{order.order_items.map((item) => <div className={styles.product} key={item.id}><div className={styles.productImage}><Image src={item.product_image_url ?? "/images/catchus.PNG"} alt={item.product_name} fill sizes="48px" /></div><div><strong>{item.product_name}</strong><span>{item.quantity} × {formatRupiah(item.unit_price)}</span></div><b>{formatRupiah(item.subtotal)}</b></div>)}</div></section>
                       </div>
                       <OrderShippingSection
                         order={order}
                         saving={updatingId === order.id}
-                        onSave={(trackingNumber) =>
-                          handleShippingSave(order, trackingNumber)
+                        onSave={(trackingNumber, shippingStatus) =>
+                          handleShippingSave(order, trackingNumber, shippingStatus)
                         }
                       />
                     </details>

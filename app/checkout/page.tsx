@@ -15,10 +15,15 @@ export default async function CheckoutPage() {
   } = await supabase.auth.getUser();
   if (!user || userError) redirect("/login?next=/checkout");
 
-  const [profileResult, paymentResult, settingsResult] = await Promise.all([
+  const [profileResult, paymentResult, settingsResult, addressesResult] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
     getPaymentSettings(supabase),
     getWebsiteSettings(),
+    supabase
+      .from("shipping_addresses")
+      .select("*")
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: true }),
   ]);
   const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
 
@@ -33,6 +38,7 @@ export default async function CheckoutPage() {
           : "")
       }
       paymentSettings={paymentResult.data}
+      initialAddresses={addressesResult.data ?? []}
     />
   );
 }

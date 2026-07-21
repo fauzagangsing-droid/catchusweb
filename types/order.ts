@@ -2,7 +2,7 @@ import type {
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
-  ShippingCourier,
+  ShippingStatus,
 } from "@/types/database";
 
 export type AdminOrderAction =
@@ -14,13 +14,8 @@ export type AdminOrderAction =
   | "cancel_order";
 
 export interface CheckoutFormValues {
-  fullName: string;
-  phone: string;
-  address: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  courier: ShippingCourier;
+  addressId: string;
+  shippingQuoteToken: string;
   paymentMethod: PaymentMethod;
 }
 
@@ -47,7 +42,19 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   cancelled: "Dibatalkan",
 };
 
-export const SHIPPING_COURIER_LABELS: Record<ShippingCourier, string> = {
-  jnt_express: "J&T Express",
-  jne: "JNE",
+export const SHIPPING_STATUS_LABELS: Record<ShippingStatus, string> = {
+  pending: "Menunggu Diproses",
+  ready_to_ship: "Siap Dikirim",
+  shipped: "Dalam Pengiriman",
+  delivered: "Terkirim",
+  returned: "Dikembalikan",
+  cancelled: "Pengiriman Dibatalkan",
 };
+
+export function getCourierName(order: {
+  courier_name: string | null;
+  courier_code: string | null;
+  shipping_courier: string | null;
+}): string {
+  return order.courier_name ?? order.courier_code ?? order.shipping_courier ?? "-";
+}

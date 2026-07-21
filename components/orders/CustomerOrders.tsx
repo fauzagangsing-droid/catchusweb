@@ -6,7 +6,8 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
-  SHIPPING_COURIER_LABELS,
+  SHIPPING_STATUS_LABELS,
+  getCourierName,
 } from "@/types/order";
 import styles from "./CustomerOrders.module.css";
 
@@ -65,19 +66,20 @@ export default function CustomerOrders({ orders, error }: CustomerOrdersProps) {
                 )}
               </div>
 
-              {order.shipping_courier && (
+              {(order.courier_code || order.shipping_courier) && (
                 <section className={styles.shipping}>
                   <div className={styles.shippingTitle}>
                     <i className="ri-truck-line" aria-hidden="true" />
                     <h3>Pengiriman</h3>
                   </div>
                   <dl>
-                    <div><dt>Kurir</dt><dd>{SHIPPING_COURIER_LABELS[order.shipping_courier]}</dd></div>
+                    <div><dt>Alamat Pengiriman</dt><dd>{order.shipping_full_name}<br />{order.shipping_address}<br />{order.shipping_village && `${order.shipping_village}, `}{order.shipping_district && `${order.shipping_district}, `}{order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}</dd></div>
+                    <div><dt>Kurir</dt><dd>{getCourierName(order)}</dd></div>
+                    <div><dt>Biaya Pengiriman</dt><dd>{formatRupiah(order.shipping_cost)}</dd></div>
+                    <div><dt>Estimasi</dt><dd>{order.shipping_estimation ?? "Tidak tersedia"}</dd></div>
+                    <div><dt>Status Pengiriman</dt><dd>{SHIPPING_STATUS_LABELS[order.shipping_status]}</dd></div>
                     {order.tracking_number && (
-                      <>
-                        <div><dt>Nomor Resi</dt><dd>{order.tracking_number}</dd></div>
-                        <div><dt>Status</dt><dd>{ORDER_STATUS_LABELS[order.order_status]}</dd></div>
-                      </>
+                      <div><dt>Nomor Resi</dt><dd>{order.tracking_number}</dd></div>
                     )}
                   </dl>
                 </section>

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState, type FormEvent } from "react";
 import type { Category, ProductStatus, ProductWithRelations } from "@/types/database";
+import { DEFAULT_PRODUCT_WEIGHT_KG } from "@/lib/product-weight";
 import {
   slugify,
   validateProductForm,
@@ -32,7 +33,7 @@ function toFormValues(product?: ProductWithRelations | null): TextFieldValues {
     comparePrice: product?.compare_price != null ? String(product.compare_price) : "",
     categoryId: product?.category_id ?? "",
     stock: product ? String(product.stock) : "0",
-    weight: product?.weight != null ? String(product.weight) : "",
+    weight: String(product?.weight ?? DEFAULT_PRODUCT_WEIGHT_KG),
     status: product?.status ?? "active",
     shortDescription: product?.short_description ?? "",
     description: product?.description ?? "",
@@ -214,8 +215,8 @@ export default function ProductForm({
               {errors.stock && <span className={styles.fieldError}>{errors.stock}</span>}
             </div>
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="product-weight">Weight (g)</label>
-              <input id="product-weight" type="number" min="0" step="0.01" className={styles.input} value={values.weight} onChange={(event) => setField("weight", event.target.value)} placeholder="350" aria-invalid={Boolean(errors.weight)} disabled={submitting} />
+              <label className={styles.label} htmlFor="product-weight">Weight (kg)</label>
+              <input id="product-weight" type="number" min="0" step="0.01" className={styles.input} value={values.weight} onChange={(event) => setField("weight", event.target.value)} placeholder="0.30" aria-invalid={Boolean(errors.weight)} disabled={submitting} required />
               {errors.weight && <span className={styles.fieldError}>{errors.weight}</span>}
             </div>
           </div>

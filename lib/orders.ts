@@ -22,6 +22,12 @@ export function friendlyOrderError(message: string): string {
   if (normalized.includes("shipping information")) {
     return "Lengkapi seluruh informasi pengiriman sebelum membuat pesanan.";
   }
+  if (normalized.includes("berat keranjang") || normalized.includes("pilih ulang opsi")) {
+    return "Keranjang berubah sejak ongkir dihitung. Pilih alamat dan kurir kembali.";
+  }
+  if (normalized.includes("pilihan pengiriman") || normalized.includes("alamat pengiriman")) {
+    return "Alamat atau opsi pengiriman tidak valid. Silakan pilih kembali.";
+  }
   if (normalized.includes("status transition")) {
     return "Tindakan tersebut tidak sesuai dengan status pesanan saat ini.";
   }

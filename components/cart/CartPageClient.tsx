@@ -242,6 +242,10 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                 <span>Subtotal ({totals.itemCount} barang)</span>
                 <strong>{formatRupiah(totals.subtotal)}</strong>
               </div>
+              <div className={styles.summaryLine}>
+                <span>Total Berat</span>
+                <strong>{totals.totalWeight.toFixed(2)} kg</strong>
+              </div>
               <div className={styles.totalLine}>
                 <span>Total Keseluruhan</span>
                 <strong>{formatRupiah(totals.grandTotal)}</strong>

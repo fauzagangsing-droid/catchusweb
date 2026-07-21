@@ -69,7 +69,7 @@ create table if not exists public.products (
   price          numeric(12, 2) not null,
   compare_price  numeric(12, 2),
   stock          integer not null default 0,
-  weight         numeric(10, 2),
+  weight         numeric(5, 2) not null default 0.30,
   status         text not null default 'active',
   featured       boolean not null default false,
   shopee_url     text,
@@ -87,12 +87,13 @@ create table if not exists public.products (
   constraint products_price_nonnegative check (price >= 0),
   constraint products_compare_price_nonnegative check (compare_price is null or compare_price >= 0),
   constraint products_stock_nonnegative check (stock >= 0),
-  constraint products_weight_nonnegative check (weight is null or weight >= 0),
+  constraint products_weight_nonnegative check (weight >= 0),
   constraint products_status_valid check (status in ('active', 'inactive', 'draft', 'out_of_stock'))
 );
 
 comment on table public.products is 'Catalog products. category_id is nullable + ON DELETE SET NULL so removing a category never deletes products.';
 comment on column public.products.short_description is 'Concise product summary for product cards, quick views, and SEO metadata.';
+comment on column public.products.weight is 'Shipping weight per product in kilograms.';
 
 -- Keep updated_at accurate automatically
 create or replace function public.set_updated_at()

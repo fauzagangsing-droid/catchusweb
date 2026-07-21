@@ -151,7 +151,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               {product.category && <div><dt>Category</dt><dd>{product.category.name}</dd></div>}
               {product.brand && <div><dt>Brand</dt><dd>{product.brand}</dd></div>}
               {product.sku && <div><dt>SKU</dt><dd>{product.sku}</dd></div>}
-              {product.weight != null && <div><dt>Weight</dt><dd>{product.weight} g</dd></div>}
+              <div><dt>Weight</dt><dd>{product.weight} kg</dd></div>
             </dl>
             </div>
 

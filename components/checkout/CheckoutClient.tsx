@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/hooks/useCart";
 import { formatRupiah } from "@/lib/adapters";
 import { calculateCartTotals, getCart } from "@/lib/cart";
@@ -16,12 +16,10 @@ import type {
   CartItemWithProduct,
   PaymentMethod,
   PaymentSettings,
-  ShippingCourier,
+  ShippingAddress,
 } from "@/types/database";
-import {
-  SHIPPING_COURIER_LABELS,
-  type CheckoutFormValues,
-} from "@/types/order";
+import type { ShippingOption, ShippingQuoteResponse } from "@/types/shipping";
+import AddressManager from "./AddressManager";
 import styles from "./Checkout.module.css";
 
 interface CheckoutClientProps {
@@ -29,16 +27,43 @@ interface CheckoutClientProps {
   email: string;
   initialFullName: string;
   paymentSettings: PaymentSettings | null;
+  initialAddresses: ShippingAddress[];
 }
 
-type CheckoutFormState = Omit<CheckoutFormValues, "courier"> & {
-  courier: ShippingCourier | "";
-};
-type CheckoutField = Exclude<
-  keyof CheckoutFormState,
-  "courier" | "paymentMethod"
->;
-type FieldErrors = Partial<Record<keyof CheckoutFormState, string>>;
+const quoteRequests = new Map<string, Promise<ShippingQuoteResponse>>();
+
+async function requestShippingQuote(
+  address: ShippingAddress,
+  totalWeight: number
+): Promise<ShippingQuoteResponse> {
+  const key = `${address.id}:${address.village_code}:${totalWeight.toFixed(3)}`;
+  const existing = quoteRequests.get(key);
+  if (existing) return existing;
+  const request = fetch("/api/shipping/quote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ addressId: address.id }),
+  })
+    .then(async (response) => {
+      const result = (await response.json()) as ShippingQuoteResponse & { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Ongkir tidak dapat dihitung.");
+      return result;
+    })
+    .catch((error) => {
+      quoteRequests.delete(key);
+      throw error;
+    });
+  quoteRequests.set(key, request);
+  void request.then(
+    () => {
+      window.setTimeout(() => {
+        if (quoteRequests.get(key) === request) quoteRequests.delete(key);
+      }, 5 * 60 * 1000);
+    },
+    () => undefined
+  );
+  return request;
+}
 
 function getProductImage(item: CartItemWithProduct): string {
   const images = item.product?.product_images ?? [];
@@ -49,24 +74,12 @@ function getProductImage(item: CartItemWithProduct): string {
   );
 }
 
-function validate(values: CheckoutFormState): FieldErrors {
-  const errors: FieldErrors = {};
-  if (values.fullName.trim().length < 2) errors.fullName = "Masukkan nama penerima.";
-  if (!/^[0-9+()\-\s]{8,20}$/.test(values.phone.trim())) errors.phone = "Masukkan nomor telepon yang valid.";
-  if (values.address.trim().length < 8) errors.address = "Masukkan alamat lengkap.";
-  if (values.city.trim().length < 2) errors.city = "Masukkan kota atau kabupaten.";
-  if (values.province.trim().length < 2) errors.province = "Masukkan provinsi.";
-  if (!/^\d{4,10}$/.test(values.postalCode.trim())) errors.postalCode = "Masukkan kode pos yang valid.";
-  if (!values.courier) errors.courier = "Pilih kurir pengiriman.";
-  if (!values.paymentMethod) errors.paymentMethod = "Pilih metode pembayaran.";
-  return errors;
-}
-
 export default function CheckoutClient({
   brandName,
   email,
   initialFullName,
   paymentSettings,
+  initialAddresses,
 }: CheckoutClientProps) {
   const router = useRouter();
   const { refreshCart } = useCart();
@@ -76,31 +89,27 @@ export default function CheckoutClient({
     ? isBankTransferConfigured(paymentSettings)
     : false;
   const [items, setItems] = useState<CartItemWithProduct[]>([]);
+  const [addresses, setAddresses] = useState(initialAddresses);
+  const [selectedAddressId, setSelectedAddressId] = useState(
+    initialAddresses.find((address) => address.is_default)?.id ?? initialAddresses[0]?.id ?? ""
+  );
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedOption, setSelectedOption] = useState<ShippingOption | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    qrisConfigured ? "qris" : danaConfigured ? "dana" : "bank_transfer"
+  );
   const [loading, setLoading] = useState(true);
+  const [loadingShipping, setLoadingShipping] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [values, setValues] = useState<CheckoutFormState>({
-    fullName: initialFullName,
-    phone: "",
-    address: "",
-    city: "",
-    province: "",
-    postalCode: "",
-    courier: "",
-    paymentMethod: qrisConfigured
-      ? "qris"
-      : danaConfigured
-        ? "dana"
-        : "bank_transfer",
-  });
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [quoteVersion, setQuoteVersion] = useState(0);
 
   useEffect(() => {
     let active = true;
     getCart()
       .then((cart) => {
-        if (!active) return;
-        setItems(cart?.items ?? []);
+        if (active) setItems(cart?.items ?? []);
       })
       .catch(() => {
         if (active) setError("Keranjang tidak dapat dimuat. Silakan coba lagi.");
@@ -108,40 +117,66 @@ export default function CheckoutClient({
       .finally(() => {
         if (active) setLoading(false);
       });
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
   const totals = useMemo(() => calculateCartTotals(items), [items]);
-  const shippingCost = paymentSettings?.shipping_cost ?? 0;
+  const selectedAddress = addresses.find((address) => address.id === selectedAddressId) ?? null;
+
+  useEffect(() => {
+    let active = true;
+    setSelectedOption(null);
+    setShippingOptions([]);
+    setShippingError(null);
+    if (!selectedAddress || items.length === 0) return () => { active = false; };
+
+    setLoadingShipping(true);
+    requestShippingQuote(selectedAddress, totals.totalWeight)
+      .then((quote) => {
+        if (active) setShippingOptions(quote.options);
+      })
+      .catch((quoteError) => {
+        if (active) {
+          setShippingError(
+            quoteError instanceof Error ? quoteError.message : "Ongkir tidak dapat dihitung."
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingShipping(false);
+      });
+    return () => { active = false; };
+  }, [selectedAddress, items.length, quoteVersion, totals.totalWeight]);
+
+  const shippingCost = selectedOption?.cost ?? 0;
   const total = totals.subtotal + shippingCost;
   const hasUnavailableItems = items.some(
     (item) => !item.product || item.product.stock < item.quantity
   );
 
-  function setField(field: CheckoutField, value: string) {
-    setValues((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
+  function handleAddressesChange(nextAddresses: ShippingAddress[], preferredId?: string) {
+    setAddresses(nextAddresses);
+    const nextSelected =
+      preferredId ??
+      nextAddresses.find((address) => address.id === selectedAddressId)?.id ??
+      nextAddresses.find((address) => address.is_default)?.id ??
+      nextAddresses[0]?.id ??
+      "";
+    setSelectedAddressId(nextSelected);
+    setSelectedOption(null);
   }
 
-  function selectPaymentMethod(paymentMethod: PaymentMethod) {
-    setValues((current) => ({ ...current, paymentMethod }));
-    setErrors((current) => ({ ...current, paymentMethod: undefined }));
-  }
-
-  function selectCourier(courier: ShippingCourier | "") {
-    setValues((current) => ({ ...current, courier }));
-    setErrors((current) => ({ ...current, courier: undefined }));
-  }
-
-  async function placeOrder(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextErrors = validate(values);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+  async function placeOrder() {
+    if (!selectedAddress) {
+      setError("Pilih atau tambahkan alamat pengiriman.");
+      return;
+    }
+    if (!selectedOption) {
+      setError("Pilih layanan kurir terlebih dahulu.");
+      return;
+    }
     if (hasUnavailableItems || items.length === 0) {
-      setError("Periksa keranjang Anda sebelum membuat pesanan.");
+      setError("Periksa ketersediaan produk sebelum membuat pesanan.");
       return;
     }
 
@@ -151,18 +186,18 @@ export default function CheckoutClient({
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          addressId: selectedAddress.id,
+          shippingQuoteToken: selectedOption.quoteToken,
+          paymentMethod,
+        }),
       });
-      const result = (await response.json()) as {
-        orderNumber?: string;
-        error?: string;
-      };
+      const result = (await response.json()) as { orderNumber?: string; error?: string };
       if (!response.ok || !result.orderNumber) {
         setError(result.error ?? "Pesanan tidak dapat dibuat.");
         setSubmitting(false);
         return;
       }
-
       await refreshCart();
       router.replace(`/payment/${encodeURIComponent(result.orderNumber)}`);
     } catch {
@@ -170,27 +205,6 @@ export default function CheckoutClient({
       setSubmitting(false);
     }
   }
-
-  const field = (
-    name: CheckoutField,
-    label: string,
-    autoComplete: string,
-    inputMode?: "text" | "tel" | "numeric"
-  ) => (
-    <div className={styles.field}>
-      <label htmlFor={`checkout-${name}`}>{label}</label>
-      <input
-        id={`checkout-${name}`}
-        value={values[name]}
-        onChange={(event) => setField(name, event.target.value)}
-        autoComplete={autoComplete}
-        inputMode={inputMode}
-        disabled={submitting}
-        aria-invalid={Boolean(errors[name])}
-      />
-      {errors[name] && <span>{errors[name]}</span>}
-    </div>
-  );
 
   return (
     <div className={styles.page}>
@@ -207,9 +221,8 @@ export default function CheckoutClient({
         <div className={styles.title}>
           <span>Proses pembayaran aman</span>
           <h1>Selesaikan Pesanan</h1>
-          <p>Konfirmasi informasi pengiriman dan metode pembayaran Anda.</p>
+          <p>Pilih alamat, bandingkan semua layanan kurir yang tersedia, lalu konfirmasi pembayaran.</p>
         </div>
-
         {error && <div className={styles.error} role="alert">{error}</div>}
 
         {loading ? (
@@ -220,61 +233,67 @@ export default function CheckoutClient({
             <Link href="/#produk">Lanjut Belanja</Link>
           </section>
         ) : (
-          <form className={styles.layout} onSubmit={placeOrder} noValidate>
+          <div className={styles.layout}>
             <div className={styles.formColumn}>
               <section className={styles.card}>
                 <div className={styles.cardHeader}>
                   <i className="ri-map-pin-line" aria-hidden="true" />
-                  <div><h2>Informasi Pengiriman</h2><p>Ke mana pesanan Anda harus dikirim?</p></div>
+                  <div><h2>Alamat Pengiriman</h2><p>Pilih alamat tersimpan atau tambahkan alamat baru.</p></div>
                 </div>
                 <div className={styles.cardBody}>
-                  <div className={styles.grid}>
-                    {field("fullName", "Nama Penerima", "name")}
-                    {field("phone", "Nomor Telepon", "tel", "tel")}
-                  </div>
                   <div className={styles.field}>
                     <label htmlFor="checkout-email">Email</label>
                     <input id="checkout-email" value={email} disabled />
                   </div>
-                  <div className={styles.field}>
-                    <label htmlFor="checkout-address">Alamat Lengkap</label>
-                    <textarea
-                      id="checkout-address"
-                      rows={4}
-                      value={values.address}
-                      onChange={(event) => setField("address", event.target.value)}
-                      autoComplete="street-address"
-                      disabled={submitting}
-                      aria-invalid={Boolean(errors.address)}
-                    />
-                    {errors.address && <span>{errors.address}</span>}
-                  </div>
-                  <div className={styles.grid}>
-                    {field("city", "Kota / Kabupaten", "address-level2")}
-                    {field("province", "Provinsi", "address-level1")}
-                  </div>
-                  {field("postalCode", "Kode Pos", "postal-code", "numeric")}
-                  <div className={styles.field}>
-                    <label htmlFor="checkout-courier">Kurir</label>
-                    <select
-                      id="checkout-courier"
-                      value={values.courier}
-                      onChange={(event) =>
-                        selectCourier(event.target.value as ShippingCourier | "")
-                      }
-                      disabled={submitting}
-                      aria-invalid={Boolean(errors.courier)}
-                      required
-                    >
-                      <option value="">Pilih kurir</option>
-                      {Object.entries(SHIPPING_COURIER_LABELS).map(
-                        ([value, label]) => (
-                          <option value={value} key={value}>{label}</option>
-                        )
-                      )}
-                    </select>
-                    {errors.courier && <span>{errors.courier}</span>}
-                  </div>
+                  <AddressManager
+                    addresses={addresses}
+                    selectedAddressId={selectedAddressId}
+                    initialRecipientName={initialFullName}
+                    disabled={submitting}
+                    onSelect={setSelectedAddressId}
+                    onAddressesChange={handleAddressesChange}
+                  />
+                </div>
+              </section>
+
+              <section className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <i className="ri-truck-line" aria-hidden="true" />
+                  <div><h2>Pilih Kurir</h2><p>Semua opsi berikut berasal langsung dari API.co.id.</p></div>
+                </div>
+                <div className={styles.shippingOptions}>
+                  {!selectedAddress ? (
+                    <p className={styles.optionNotice}>Pilih alamat untuk melihat ongkir.</p>
+                  ) : loadingShipping ? (
+                    <p className={styles.optionNotice}>Menghitung ongkir dan memuat kurir...</p>
+                  ) : shippingError ? (
+                    <div className={styles.quoteError} role="alert">
+                      <span>{shippingError}</span>
+                      <button type="button" onClick={() => {
+                        quoteRequests.delete(
+                          `${selectedAddress.id}:${selectedAddress.village_code}:${totals.totalWeight.toFixed(3)}`
+                        );
+                        setQuoteVersion((version) => version + 1);
+                      }}>Coba Lagi</button>
+                    </div>
+                  ) : (
+                    shippingOptions.map((option) => (
+                      <label className={styles.shippingOption} key={`${option.courierCode}:${option.cost}`}>
+                        <input
+                          type="radio"
+                          name="shippingOption"
+                          checked={selectedOption?.quoteToken === option.quoteToken}
+                          onChange={() => setSelectedOption(option)}
+                          disabled={submitting}
+                        />
+                        <span>
+                          <strong>{option.courierName}</strong>
+                          <small>{option.courierCode} · {option.estimation ?? "Estimasi tidak tersedia"}</small>
+                        </span>
+                        <b>{formatRupiah(option.cost)}</b>
+                      </label>
+                    ))
+                  )}
                 </div>
               </section>
 
@@ -285,39 +304,17 @@ export default function CheckoutClient({
                 </div>
                 <div className={styles.paymentOptions}>
                   <label className={!qrisConfigured ? styles.unavailable : ""}>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="qris"
-                      checked={values.paymentMethod === "qris"}
-                      onChange={() => selectPaymentMethod("qris")}
-                      disabled={!qrisConfigured || submitting}
-                    />
+                    <input type="radio" name="paymentMethod" value="qris" checked={paymentMethod === "qris"} onChange={() => setPaymentMethod("qris")} disabled={!qrisConfigured || submitting} />
                     <span><strong>QRIS</strong><small>{qrisConfigured ? "Pindai kode QR dengan aplikasi pembayaran Anda" : "Belum dikonfigurasi"}</small></span>
                   </label>
                   <label className={!danaConfigured ? styles.unavailable : ""}>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="dana"
-                      checked={values.paymentMethod === "dana"}
-                      onChange={() => selectPaymentMethod("dana")}
-                      disabled={!danaConfigured || submitting}
-                    />
+                    <input type="radio" name="paymentMethod" value="dana" checked={paymentMethod === "dana"} onChange={() => setPaymentMethod("dana")} disabled={!danaConfigured || submitting} />
                     <span><strong>DANA</strong><small>{danaConfigured ? "Bayar melalui akun DANA Anda" : "Belum dikonfigurasi"}</small></span>
                   </label>
                   <label className={!bankConfigured ? styles.unavailable : ""}>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="bank_transfer"
-                      checked={values.paymentMethod === "bank_transfer"}
-                      onChange={() => selectPaymentMethod("bank_transfer")}
-                      disabled={!bankConfigured || submitting}
-                    />
+                    <input type="radio" name="paymentMethod" value="bank_transfer" checked={paymentMethod === "bank_transfer"} onChange={() => setPaymentMethod("bank_transfer")} disabled={!bankConfigured || submitting} />
                     <span><strong>Transfer Bank</strong><small>{bankConfigured ? "Transfer ke rekening bank yang tersedia" : "Belum dikonfigurasi"}</small></span>
                   </label>
-                  {errors.paymentMethod && <span className={styles.paymentError}>{errors.paymentMethod}</span>}
                 </div>
               </section>
             </div>
@@ -336,24 +333,28 @@ export default function CheckoutClient({
                   </div>
                 ))}
               </div>
+              {selectedOption && (
+                <div className={styles.selectedShipping}>
+                  <span>{selectedOption.courierName}</span>
+                  <small>{selectedOption.estimation ?? "Estimasi tidak tersedia"}</small>
+                </div>
+              )}
               <div className={styles.costs}>
                 <div><span>Subtotal</span><strong>{formatRupiah(totals.subtotal)}</strong></div>
-                <div><span>Pengiriman</span><strong>{formatRupiah(shippingCost)}</strong></div>
+                <div><span>Total Berat</span><strong>{totals.totalWeight.toFixed(2)} kg</strong></div>
+                <div><span>Pengiriman</span><strong>{selectedOption ? formatRupiah(shippingCost) : "Belum dipilih"}</strong></div>
                 <div className={styles.total}><span>Total</span><strong>{formatRupiah(total)}</strong></div>
               </div>
               <button
-                type="submit"
-                disabled={
-                  submitting ||
-                  hasUnavailableItems ||
-                  (!qrisConfigured && !danaConfigured && !bankConfigured)
-                }
+                type="button"
+                onClick={() => void placeOrder()}
+                disabled={submitting || hasUnavailableItems || !selectedAddress || !selectedOption || (!qrisConfigured && !danaConfigured && !bankConfigured)}
               >
                 {submitting ? "Membuat Pesanan..." : "Buat Pesanan"}
               </button>
-              {hasUnavailableItems && <p>Kembali ke keranjang dan periksa produk yang tidak tersedia.</p>}
+              {hasUnavailableItems && <p>Periksa stok produk sebelum melanjutkan.</p>}
             </aside>
-          </form>
+          </div>
         )}
       </main>
     </div>

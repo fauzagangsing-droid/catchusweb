@@ -9,6 +9,7 @@ export interface CartTotals {
   itemCount: number;
   subtotal: number;
   grandTotal: number;
+  totalWeight: number;
 }
 
 export interface CartCountSnapshot {

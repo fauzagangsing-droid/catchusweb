@@ -1,20 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createOrderDiscordNotification } from "@/lib/discord";
 import { friendlyOrderError } from "@/lib/orders";
+import { verifyShippingQuoteToken } from "@/lib/shipping-quotes";
 import { createCustomerServerClient } from "@/lib/supabase/customer-server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import type { CheckoutFormValues } from "@/types/order";
 
 function isCheckoutPayload(value: unknown): value is CheckoutFormValues {
   if (typeof value !== "object" || value === null) return false;
   const payload = value as Record<string, unknown>;
   return (
-    typeof payload.fullName === "string" &&
-    typeof payload.phone === "string" &&
-    typeof payload.address === "string" &&
-    typeof payload.city === "string" &&
-    typeof payload.province === "string" &&
-    typeof payload.postalCode === "string" &&
-    (payload.courier === "jnt_express" || payload.courier === "jne") &&
+    typeof payload.addressId === "string" &&
+    typeof payload.shippingQuoteToken === "string" &&
     (payload.paymentMethod === "qris" ||
       payload.paymentMethod === "dana" ||
       payload.paymentMethod === "bank_transfer")
@@ -49,15 +46,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Lengkapi seluruh data checkout." }, { status: 400 });
   }
 
-  const { data: order, error } = await supabase.rpc("place_order", {
+  const quote = verifyShippingQuoteToken(payload.shippingQuoteToken);
+  if (!quote || quote.userId !== user.id) {
+    return NextResponse.json(
+      { error: "Opsi pengiriman telah kedaluwarsa. Pilih kurir kembali." },
+      { status: 400 }
+    );
+  }
+
+  const { data: address, error: addressError } = await supabase
+    .from("shipping_addresses")
+    .select("id, village_code")
+    .eq("id", payload.addressId)
+    .maybeSingle();
+  if (addressError || !address || address.village_code !== quote.destinationVillageCode) {
+    return NextResponse.json({ error: "Alamat pengiriman tidak valid." }, { status: 400 });
+  }
+
+  const orderClient = createServiceRoleClient();
+  const { data: order, error } = await orderClient.rpc("place_order_with_shipping", {
+      p_user_id: user.id,
       p_payment_method: payload.paymentMethod,
-      p_shipping_full_name: payload.fullName,
-      p_shipping_phone: payload.phone,
-      p_shipping_address: payload.address,
-      p_shipping_city: payload.city,
-      p_shipping_province: payload.province,
-      p_shipping_postal_code: payload.postalCode,
-      p_shipping_courier: payload.courier,
+      p_address_id: payload.addressId,
+      p_courier_code: quote.courierCode,
+      p_courier_name: quote.courierName,
+      p_shipping_cost: quote.shippingCost,
+      p_shipping_estimation: quote.estimation,
+      p_shipping_weight: quote.weight,
+      p_destination_village_code: quote.destinationVillageCode,
     });
 
   if (error || !order) {

@@ -1,5 +1,5 @@
-import type { Order, ShippingCourier } from "@/types/database";
-import { SHIPPING_COURIER_LABELS } from "@/types/order";
+import type { Order } from "@/types/database";
+import { getCourierName } from "@/types/order";
 
 export function normalizeWhatsAppPhone(phone: string): string | null {
   let digits = phone.replace(/\D/g, "");
@@ -15,12 +15,12 @@ export function normalizeWhatsAppPhone(phone: string): string | null {
 export function createShippingWhatsAppMessage({
   customerName,
   orderNumber,
-  courier,
+  courierName,
   trackingNumber,
 }: {
   customerName: string;
   orderNumber: string;
-  courier: ShippingCourier;
+  courierName: string;
   trackingNumber: string;
 }): string {
   return [
@@ -32,7 +32,7 @@ export function createShippingWhatsAppMessage({
     orderNumber,
     "",
     "🚚 Kurir:",
-    SHIPPING_COURIER_LABELS[courier],
+    courierName,
     "",
     "📮 Nomor Resi:",
     trackingNumber,
@@ -50,16 +50,24 @@ export function createShippingWhatsAppUrl(
     | "shipping_phone"
     | "order_number"
     | "shipping_courier"
+    | "courier_code"
+    | "courier_name"
     | "tracking_number"
+    | "shipping_status"
   >
 ): string | null {
   const phone = normalizeWhatsAppPhone(order.shipping_phone);
-  if (!phone || !order.shipping_courier || !order.tracking_number) return null;
+  if (
+    !phone ||
+    !order.shipping_courier ||
+    !order.tracking_number ||
+    !["shipped", "delivered"].includes(order.shipping_status)
+  ) return null;
 
   const message = createShippingWhatsAppMessage({
     customerName: order.shipping_full_name,
     orderNumber: order.order_number,
-    courier: order.shipping_courier,
+    courierName: getCourierName(order),
     trackingNumber: order.tracking_number,
   });
 

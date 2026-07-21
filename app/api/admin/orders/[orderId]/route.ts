@@ -3,6 +3,7 @@ import { updateOrderDiscordNotification } from "@/lib/discord";
 import { friendlyOrderError } from "@/lib/orders";
 import { getAdminRequestClient } from "@/lib/supabase/admin-server";
 import type { AdminOrderAction } from "@/types/order";
+import type { ShippingStatus } from "@/types/database";
 
 interface AdminOrderRouteContext {
   params: { orderId: string };
@@ -48,9 +49,17 @@ export async function PATCH(
 
   if (action === "save_shipping") {
     const trackingNumber = payload?.trackingNumber;
-    if (typeof trackingNumber !== "string" || !trackingNumber.trim()) {
+    const shippingStatus = payload?.shippingStatus;
+    const shippingStatuses: ShippingStatus[] = [
+      "pending", "ready_to_ship", "shipped", "delivered", "returned", "cancelled",
+    ];
+    if (
+      typeof trackingNumber !== "string" ||
+      typeof shippingStatus !== "string" ||
+      !shippingStatuses.includes(shippingStatus as ShippingStatus)
+    ) {
       return NextResponse.json(
-        { error: "Nomor resi wajib diisi." },
+        { error: "Informasi pengiriman tidak valid." },
         { status: 400 }
       );
     }
@@ -59,7 +68,8 @@ export async function PATCH(
       "admin_save_order_shipping",
       {
         p_order_id: params.orderId,
-        p_tracking_number: trackingNumber.trim(),
+        p_tracking_number: trackingNumber.trim() || null,
+        p_shipping_status: shippingStatus as ShippingStatus,
       }
     );
 

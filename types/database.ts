@@ -110,7 +110,14 @@ export interface CartItemWithProduct extends CartItem {
 }
 
 export type PaymentMethod = "qris" | "dana" | "bank_transfer";
-export type ShippingCourier = "jnt_express" | "jne";
+export type ShippingCourier = string;
+export type ShippingStatus =
+  | "pending"
+  | "ready_to_ship"
+  | "shipped"
+  | "delivered"
+  | "returned"
+  | "cancelled";
 export type PaymentStatus =
   | "pending"
   | "waiting_verification"
@@ -156,10 +163,23 @@ export type Order = {
   shipping_full_name: string;
   shipping_phone: string;
   shipping_address: string;
+  shipping_address_id: string | null;
+  shipping_address_label: string | null;
   shipping_city: string;
   shipping_province: string;
+  shipping_district: string | null;
+  shipping_village: string | null;
   shipping_postal_code: string;
+  province_code: string | null;
+  city_code: string | null;
+  district_code: string | null;
+  destination_village_code: string | null;
   shipping_courier: ShippingCourier | null;
+  courier_code: string | null;
+  courier_name: string | null;
+  shipping_estimation: string | null;
+  shipping_weight: number | null;
+  shipping_status: ShippingStatus;
   tracking_number: string | null;
   subtotal: number;
   shipping_cost: number;
@@ -171,6 +191,42 @@ export type Order = {
   created_at: string;
   updated_at: string;
 };
+
+export type ShippingAddressLabel = "home" | "office" | "other";
+
+export type ShippingAddress = {
+  id: string;
+  user_id: string;
+  recipient_name: string;
+  phone: string;
+  province_name: string;
+  city_name: string;
+  district_name: string;
+  village_name: string;
+  postal_code: string;
+  full_address: string;
+  label: ShippingAddressLabel;
+  province_code: string;
+  city_code: string;
+  district_code: string;
+  village_code: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ShippingAddressInsert = Omit<
+  ShippingAddress,
+  "id" | "created_at" | "updated_at"
+> & {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ShippingAddressUpdate = Partial<
+  Omit<ShippingAddressInsert, "user_id">
+>;
 
 export type OrderInsert = Omit<Order, "id" | "created_at" | "updated_at"> & {
   id?: string;
@@ -265,7 +321,7 @@ export type Product = {
   price: number;
   compare_price: number | null;
   stock: number;
-  weight: number | null;
+  weight: number;
   status: ProductStatus;
   featured: boolean;
   shopee_url: string | null;
@@ -316,7 +372,7 @@ export type ProductInsert = {
   price: number;
   compare_price?: number | null;
   stock?: number;
-  weight?: number | null;
+  weight: number;
   status?: ProductStatus;
   featured?: boolean;
   shopee_url?: string | null;
@@ -462,6 +518,12 @@ export interface Database {
           }
         ];
       };
+      shipping_addresses: {
+        Row: ShippingAddress;
+        Insert: ShippingAddressInsert;
+        Update: ShippingAddressUpdate;
+        Relationships: [];
+      };
       admin_users: {
         Row: AdminUser;
         Insert: { id: string; created_at?: string };
@@ -519,16 +581,17 @@ export interface Database {
         Args: Record<string, never>;
         Returns: boolean;
       };
-      place_order: {
+      place_order_with_shipping: {
         Args: {
+          p_user_id: string;
           p_payment_method: PaymentMethod;
-          p_shipping_full_name: string;
-          p_shipping_phone: string;
-          p_shipping_address: string;
-          p_shipping_city: string;
-          p_shipping_province: string;
-          p_shipping_postal_code: string;
-          p_shipping_courier: ShippingCourier;
+          p_address_id: string;
+          p_courier_code: string;
+          p_courier_name: string;
+          p_shipping_cost: number;
+          p_shipping_estimation: string | null;
+          p_shipping_weight: number;
+          p_destination_village_code: string;
         };
         Returns: Order;
       };
@@ -556,7 +619,8 @@ export interface Database {
       admin_save_order_shipping: {
         Args: {
           p_order_id: string;
-          p_tracking_number: string;
+          p_tracking_number: string | null;
+          p_shipping_status: ShippingStatus;
         };
         Returns: Order;
       };

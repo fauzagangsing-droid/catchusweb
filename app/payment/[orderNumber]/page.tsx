@@ -13,6 +13,8 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
+  SHIPPING_STATUS_LABELS,
+  getCourierName,
 } from "@/types/order";
 import styles from "./payment.module.css";
 
@@ -135,8 +137,11 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
             <div className={styles.shipping}>
               <h3>Dikirim Kepada</h3>
               <strong>{order.shipping_full_name}</strong>
-              <p>{order.shipping_address}, {order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}</p>
+              <p>{order.shipping_address}, {order.shipping_village && `${order.shipping_village}, `}{order.shipping_district && `${order.shipping_district}, `}{order.shipping_city}, {order.shipping_province} {order.shipping_postal_code}</p>
               <span>{order.shipping_phone}</span>
+              {order.courier_code && (
+                <p>{getCourierName(order)} · {formatRupiah(order.shipping_cost)} · {order.shipping_estimation ?? "Estimasi tidak tersedia"} · {SHIPPING_STATUS_LABELS[order.shipping_status]}</p>
+              )}
             </div>
           </aside>
         </div>

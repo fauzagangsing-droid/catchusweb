@@ -207,7 +207,7 @@ function ProductsContent() {
       compare_price: values.comparePrice.trim() ? Number(values.comparePrice) : null,
       category_id: values.categoryId,
       stock: Number(values.stock),
-      weight: values.weight.trim() ? Number(values.weight) : null,
+      weight: Number(values.weight),
       short_description: values.shortDescription.trim() || null,
       description: values.description.trim() || null,
       featured: values.featured,

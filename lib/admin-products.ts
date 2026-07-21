@@ -1,5 +1,6 @@
 "use client";
 
+import { z } from "zod";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type {
   Category,
@@ -304,6 +305,64 @@ export interface ProductFormValues {
 export type ProductFormErrors = Partial<Record<keyof ProductFormValues, string>>;
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const WEIGHT_PATTERN = /^\d+(?:\.\d{1,2})?$/;
+
+function isHttpUrl(value: string): boolean {
+  if (!value.trim()) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const productFormSchema = z
+  .object({
+    name: z.string().trim().min(1, "Product name is required.").min(2, "Product name must be at least 2 characters."),
+    slug: z.string().trim().min(1, "Slug is required.").regex(SLUG_PATTERN, "Slug can only contain lowercase letters, numbers, and hyphens."),
+    brand: z.string(),
+    sku: z.string(),
+    price: z.string().trim().min(1, "Price is required.").refine(
+      (value) => Number.isFinite(Number(value)) && Number(value) >= 0,
+      "Price must be a valid positive number."
+    ),
+    comparePrice: z.string().refine(
+      (value) => !value.trim() || (Number.isFinite(Number(value)) && Number(value) >= 0),
+      "Compare price must be a valid positive number."
+    ),
+    categoryId: z.string().min(1, "Please select a category."),
+    stock: z.string().trim().min(1, "Stock is required.").refine(
+      (value) => Number.isInteger(Number(value)) && Number(value) >= 0,
+      "Stock must be a whole number of zero or more."
+    ),
+    weight: z.string().trim().min(1, "Weight is required.").refine(
+      (value) =>
+        WEIGHT_PATTERN.test(value) && Number(value) >= 0 && Number(value) <= 999.99,
+      "Weight must be between 0 and 999.99 kg with at most 2 decimal places."
+    ),
+    status: z.enum(["active", "inactive", "draft", "out_of_stock"]),
+    shortDescription: z.string(),
+    description: z.string(),
+    featured: z.boolean(),
+    shopeeUrl: z.string().refine(isHttpUrl, "Enter a valid http or https URL."),
+    tokopediaUrl: z.string().refine(isHttpUrl, "Enter a valid http or https URL."),
+    tiktokShopUrl: z.string().refine(isHttpUrl, "Enter a valid http or https URL."),
+    lazadaUrl: z.string().refine(isHttpUrl, "Enter a valid http or https URL."),
+    blibliUrl: z.string().refine(isHttpUrl, "Enter a valid http or https URL."),
+  })
+  .superRefine((values, context) => {
+    if (
+      values.comparePrice.trim() &&
+      Number(values.comparePrice) < Number(values.price)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["comparePrice"],
+        message: "Compare price should be greater than or equal to the price.",
+      });
+    }
+  });
 
 /**
  * Validates the Add/Edit Product form and returns friendly, field-level
@@ -311,73 +370,15 @@ const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  */
 export function validateProductForm(
   values: Omit<ProductFormValues, "images">
-  ): ProductFormErrors {
+): ProductFormErrors {
   const errors: ProductFormErrors = {};
-
-  if (!values.name.trim()) {
-    errors.name = "Product name is required.";
-  } else if (values.name.trim().length < 2) {
-    errors.name = "Product name must be at least 2 characters.";
-  }
-
-  if (!values.slug.trim()) {
-    errors.slug = "Slug is required.";
-  } else if (!SLUG_PATTERN.test(values.slug.trim())) {
-    errors.slug = "Slug can only contain lowercase letters, numbers, and hyphens.";
-  }
-
-  const priceValue = Number(values.price);
-  if (!values.price.trim()) {
-    errors.price = "Price is required.";
-  } else if (Number.isNaN(priceValue) || priceValue < 0) {
-    errors.price = "Price must be a valid positive number.";
-  }
-
-  if (!values.categoryId) {
-    errors.categoryId = "Please select a category.";
-  }
-
-  const comparePriceValue = Number(values.comparePrice);
-  if (values.comparePrice.trim() && (Number.isNaN(comparePriceValue) || comparePriceValue < 0)) {
-    errors.comparePrice = "Compare price must be a valid positive number.";
-  } else if (values.comparePrice.trim() && comparePriceValue < priceValue) {
-    errors.comparePrice = "Compare price should be greater than or equal to the price.";
-  }
-
-  const stockValue = Number(values.stock);
-  if (!values.stock.trim()) {
-    errors.stock = "Stock is required.";
-  } else if (!Number.isInteger(stockValue) || stockValue < 0) {
-    errors.stock = "Stock must be a whole number of zero or more.";
-  }
-
-  const weightValue = Number(values.weight);
-  if (values.weight.trim() && (Number.isNaN(weightValue) || weightValue < 0)) {
-    errors.weight = "Weight must be a valid positive number.";
-  }
-
-  const urlFields: Array<[
-    "shopeeUrl" | "tokopediaUrl" | "tiktokShopUrl" | "lazadaUrl" | "blibliUrl",
-    string
-  ]> = [
-    ["shopeeUrl", values.shopeeUrl],
-    ["tokopediaUrl", values.tokopediaUrl],
-    ["tiktokShopUrl", values.tiktokShopUrl],
-    ["lazadaUrl", values.lazadaUrl],
-    ["blibliUrl", values.blibliUrl],
-  ];
-
-  urlFields.forEach(([field, value]) => {
-    if (!value.trim()) return;
-    try {
-      const url = new URL(value);
-      if (url.protocol !== "http:" && url.protocol !== "https:") {
-        errors[field] = "Enter a valid http or https URL.";
-      }
-    } catch {
-      errors[field] = "Enter a valid URL, including https://.";
+  const result = productFormSchema.safeParse(values);
+  if (result.success) return errors;
+  for (const issue of result.error.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string" && !errors[field as keyof ProductFormValues]) {
+      errors[field as keyof ProductFormValues] = issue.message;
     }
-  });
-
+  }
   return errors;
 }

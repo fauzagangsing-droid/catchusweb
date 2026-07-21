@@ -37,6 +37,7 @@ export default function ProductTable({
               <th>Category</th>
               <th>Price</th>
               <th>Stock</th>
+              <th>Weight</th>
               <th>Featured</th>
               <th>Active</th>
               <th className={styles.thActions}>Actions</th>
@@ -45,14 +46,14 @@ export default function ProductTable({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className={styles.stateCell}>
+                <td colSpan={8} className={styles.stateCell}>
                   <span className={styles.spinner} aria-hidden="true" />
                   Loading products...
                 </td>
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={7} className={styles.stateCell}>
+                <td colSpan={8} className={styles.stateCell}>
                   No products match your filters.
                 </td>
               </tr>
@@ -91,6 +92,7 @@ export default function ProductTable({
                     </td>
                     <td className={styles.priceCell}>{formatRupiah(product.price)}</td>
                     <td>{product.stock}</td>
+                    <td>{product.weight} kg</td>
                     <td>
                       <button
                         type="button"
