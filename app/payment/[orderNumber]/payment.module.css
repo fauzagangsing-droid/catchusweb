@@ -36,7 +36,6 @@
 .instructions { margin-top: 22px; }
 .instructions h3 { font-size: 15px; }
 .instructions ol { margin: 11px 0 0 20px; color: #666; font-size: 12px; line-height: 1.9; }
-.notice { margin-top: 22px; padding: 12px; border-radius: 8px; background: #f3f3f3; color: #555; font-size: 12px; text-align: center; }
 .summary { position: sticky; top: 100px; }
 .summary h2 { margin-bottom: 18px; font-size: 19px; }
 .summaryRows { display: grid; gap: 12px; }

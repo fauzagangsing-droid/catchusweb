@@ -13,14 +13,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Single shared client. Only the public anon key is used here — this client
-// is safe to reference from Server Components, Route Handlers, or (if ever
-// needed) Client Components alike, because it never has elevated privileges.
-// Row Level Security policies (see supabase/schema.sql) are what actually
-// restrict what this key can read/write, not this file.
+// Shared anonymous client for server-side public catalog queries. It never
+// carries an authenticated user session or elevated credentials; Supabase Row
+// Level Security policies determine what the anon key may read and write.
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // No user sessions/auth in Phase 2 — this is a read-only public catalog client.
+    // Admin and customer sessions use their dedicated browser/SSR clients.
     persistSession: false,
   },
   global: {

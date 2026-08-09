@@ -1,6 +1,5 @@
-// Automatically shown by Next.js while app/page.tsx (a Server Component)
-// is awaiting its Supabase fetches. Reuses the existing `.produk` /
-// `.container` classes so nothing new is added to globals.css.
+// Root-segment loading fallback. It reuses existing storefront classes so no
+// additional global styling is needed.
 export default function Loading() {
   return (
     <div className="produk">

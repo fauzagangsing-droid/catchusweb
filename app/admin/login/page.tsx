@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import AdminLoginForm from "@/components/admin/AdminLoginForm";
 import RedirectIfAuthenticated from "@/components/admin/RedirectIfAuthenticated";
-import styles from "./login.module.css";
+import styles from "@/components/admin/login.module.css";
 
 export const metadata: Metadata = {
   title: "Admin Login | Catchus Official",

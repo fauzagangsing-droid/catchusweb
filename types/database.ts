@@ -1,7 +1,8 @@
 /**
- * These interfaces mirror supabase/schema.sql exactly (column-for-column).
- * Keep this file and schema.sql in sync manually, or later regenerate with
- * `supabase gen types typescript` once the CLI is wired into the project.
+ * Application-facing types for the Supabase tables and RPCs used by this
+ * project. Keep them aligned with the SQL files under `supabase/`, or later
+ * regenerate them with `supabase gen types typescript` once the CLI is wired
+ * into the project.
  */
 
 export type ProductStatus = "active" | "inactive" | "draft" | "out_of_stock";
@@ -409,7 +410,7 @@ export interface ProductWithRelations extends Product {
 }
 
 /**
- * Insert/Update payload shapes for the Product Management module (Phase 3).
+ * Insert/update payload shapes for the Product Management module.
  * Only columns an admin actually supplies are required; anything with a
  * database default (id, timestamps, stock, etc.) is optional so callers
  * don't have to pass values the database already fills in.

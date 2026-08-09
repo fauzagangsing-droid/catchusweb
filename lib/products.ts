@@ -1,4 +1,4 @@
-import { ModelImage } from "@/types/product";
+import type { ModelImage } from "@/types/product";
 
 // NOTE: static `products` and `produkFilters` were removed here — product
 // data now comes from Supabase (see lib/queries.ts + lib/adapters.ts) so it
@@ -8,9 +8,34 @@ import { ModelImage } from "@/types/product";
 
 // Extracted 1:1 from the original <div class="Model-list"> block.
 export const modelImages: ModelImage[] = [
-  { id: "model-1", image: "/images/model1.JPG", alt: "Catchus graphic T-shirt front styling", filter: "T-shirt" },
-  { id: "model-2", image: "/images/model2.JPG", alt: "Catchus T-shirt streetwear look", filter: "T-shirt" },
-  { id: "model-3", image: "/images/model3.JPG", alt: "Catchus oversized T-shirt outfit", filter: "T-shirt" },
-  { id: "model-4", image: "/images/Sweater1.jpg", alt: "Catchus sweater front styling", filter: "Sweater" },
-  { id: "model-5", image: "/images/Sweater2.jpg", alt: "Catchus sweater streetwear look", filter: "Sweater" },
+  {
+    id: "model-1",
+    image: "/images/model1.JPG",
+    alt: "Catchus graphic T-shirt front styling",
+    filter: "T-shirt",
+  },
+  {
+    id: "model-2",
+    image: "/images/model2.JPG",
+    alt: "Catchus T-shirt streetwear look",
+    filter: "T-shirt",
+  },
+  {
+    id: "model-3",
+    image: "/images/model3.JPG",
+    alt: "Catchus oversized T-shirt outfit",
+    filter: "T-shirt",
+  },
+  {
+    id: "model-4",
+    image: "/images/Sweater1.jpg",
+    alt: "Catchus sweater front styling",
+    filter: "Sweater",
+  },
+  {
+    id: "model-5",
+    image: "/images/Sweater2.jpg",
+    alt: "Catchus sweater streetwear look",
+    filter: "Sweater",
+  },
 ];

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import AosInit from "@/components/AosInit";
 import CartProvider from "@/components/cart/CartProvider";
@@ -7,14 +7,11 @@ import { getWebsiteSettings } from "@/lib/queries";
 import { getSiteUrl } from "@/lib/seo";
 import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 
-// Original site loaded Poppins 400/500/600/700 from Google Fonts via <link> tags.
-// next/font/google fetches + self-hosts the same weights with zero visual difference
-// and no layout shift, while removing the external network request.
-const poppins = Poppins({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
-  variable: "--font-poppins",
+  variable: "--font-plus-jakarta-sans",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -45,7 +42,10 @@ export default function RootLayout({
         {/* AOS styles - kept as CDN link, exactly as in the original site */}
         <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
       </head>
-      <body id="beranda" className={poppins.className}>
+      <body
+        id="beranda"
+        className={`${plusJakartaSans.variable} ${plusJakartaSans.className}`}
+      >
         <CartProvider>{children}</CartProvider>
         {/* Replaces the inline <script>AOS.init()</script> from index.html */}
         <AosInit />

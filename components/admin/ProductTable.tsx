@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+
+import { formatRupiah, resolveProductImage } from "@/lib/adapters";
 import type { ProductWithRelations } from "@/types/database";
 import styles from "./ProductTable.module.css";
 
@@ -12,10 +14,6 @@ export interface ProductTableProps {
   onDelete: (product: ProductWithRelations) => void;
   onToggleFeatured: (product: ProductWithRelations) => void;
   onToggleActive: (product: ProductWithRelations) => void;
-}
-
-function formatRupiah(amount: number): string {
-  return `Rp ${Math.round(amount).toLocaleString("id-ID")}`;
 }
 
 export default function ProductTable({
@@ -61,18 +59,13 @@ export default function ProductTable({
               products.map((product) => {
                 const isToggling = togglingId === product.id;
                 const isActive = product.status === "active";
-                const thumbnail =
-                  product.product_images?.find((image) => image.is_thumbnail) ??
-                  product.product_images?.[0] ??
-                  null;
-
                 return (
                   <tr key={product.id}>
                     <td>
                       <div className={styles.productCell}>
                         <div className={styles.thumbWrap}>
                           <Image
-                            src={thumbnail?.image_url ?? "/images/catchus.PNG"}
+                            src={resolveProductImage(product)}
                             alt={product.name}
                             fill
                             sizes="44px"

@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+
 import { useCart } from "@/hooks/useCart";
-import { formatRupiah } from "@/lib/adapters";
+import { formatRupiah, resolveProductImage } from "@/lib/adapters";
 import { calculateCartTotals, getCart } from "@/lib/cart";
 import {
   isBankTransferConfigured,
@@ -63,15 +64,6 @@ async function requestShippingQuote(
     () => undefined
   );
   return request;
-}
-
-function getProductImage(item: CartItemWithProduct): string {
-  const images = item.product?.product_images ?? [];
-  return (
-    images.find((image) => image.is_thumbnail)?.image_url ??
-    images[0]?.image_url ??
-    "/images/catchus.PNG"
-  );
 }
 
 export default function CheckoutClient({
@@ -356,7 +348,12 @@ export default function CheckoutClient({
                 {items.map((item) => (
                   <div className={styles.item} key={item.id}>
                     <div className={styles.image}>
-                      <Image src={getProductImage(item)} alt={item.product?.name ?? "Produk"} fill sizes="64px" />
+                      <Image
+                        src={resolveProductImage(item.product)}
+                        alt={item.product?.name ?? "Produk"}
+                        fill
+                        sizes="64px"
+                      />
                       <span>{item.quantity}</span>
                     </div>
                     <div><strong>{item.product?.name ?? "Produk tidak tersedia"}</strong><small>{formatRupiah(item.product?.price ?? 0)}</small></div>

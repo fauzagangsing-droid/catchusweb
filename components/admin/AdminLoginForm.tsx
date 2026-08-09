@@ -5,14 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import styles from "./login.module.css";
 
-/**
- * Admin Login form — wired to real Supabase Auth (email + password).
- *
- * UI/markup is unchanged from the original placeholder version. Only
- * handleSubmit's internals changed: it now calls
- * supabaseBrowser.auth.signInWithPassword, maps Supabase's error messages to
- * friendlier copy, and redirects to /admin/dashboard on success.
- */
+/** Authenticates an administrator with Supabase and opens the dashboard. */
 function toFriendlyMessage(rawMessage: string): string {
   const message = rawMessage.toLowerCase();
 

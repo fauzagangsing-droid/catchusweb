@@ -1,5 +1,0 @@
-.wrapper { margin-top: 22px; }
-.wrapper button { width: 100%; min-height: 48px; border: 2px solid #111; border-radius: 7px; background: #111; color: #fff; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-.wrapper button:hover:not(:disabled) { background: #fff; color: #111; }
-.wrapper button:disabled { opacity: .6; cursor: not-allowed; }
-.wrapper p { margin-top: 8px; color: #a5222d; font-size: 11px; }

@@ -47,7 +47,6 @@ export default function Navbar({ brandName, logoUrl }: NavbarProps) {
             <CustomerAuthNav />
           </ul>
 
-          {/* menumen */}
           <i className="ri-menu-3-line ri-2x" onClick={toggleMenu}></i>
         </div>
       </div>

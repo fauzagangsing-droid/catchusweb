@@ -278,8 +278,8 @@ function ProductsContent() {
     setDeleteError(null);
 
     // product_images rows are removed automatically (ON DELETE CASCADE in
-    // schema.sql), but the actual file in Supabase Storage is not — purge it
-    // first so deleting a product never leaves an orphaned image behind.
+    // schema.sql). Capture Storage paths before deleting the product, then
+    // purge those files after the database deletion succeeds.
     const storagePaths = (deletingProduct.product_images ?? [])
       .map((image) => getImagePathFromPublicUrl(image.image_url))
       .filter((path): path is string => Boolean(path));

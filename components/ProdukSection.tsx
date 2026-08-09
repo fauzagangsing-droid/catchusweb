@@ -1,8 +1,8 @@
 "use client";
 
-import { Product } from "@/types/product";
 import { useProdukFilter } from "@/hooks/useProdukFilter";
 import ProdukCard from "@/components/ProdukCard";
+import type { Product } from "@/types/product";
 
 interface ProdukSectionProps {
   products: Product[];
@@ -15,7 +15,7 @@ export default function ProdukSection({
   filters,
   errorMessage,
 }: ProdukSectionProps) {
-  const { activeFilter, setActiveFilter, isVisible } = useProdukFilter(products);
+  const { activeFilter, setActiveFilter, isVisible } = useProdukFilter();
 
   return (
     <div className="produk" id="produk">

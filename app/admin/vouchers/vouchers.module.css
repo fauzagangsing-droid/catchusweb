@@ -1,1 +1,171 @@
-.shell{display:flex;min-height:100vh;background:#f1f1f1}.main{min-width:0;flex:1}.content{max-width:1200px;margin:auto;padding:28px 32px 50px}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px}.toolbar p{margin-top:5px;color:#777}.toolbar button,.actions button{padding:11px 16px;border:0;border-radius:8px;background:#111;color:#fff;font-weight:700}.error{margin-top:18px;padding:12px;border-radius:8px;background:#fdecee;color:#a51d2d}.state{margin-top:22px}.tableWrap{margin-top:22px;overflow:auto;border-radius:13px;background:#fff}.tableWrap table{width:100%;border-collapse:collapse}.tableWrap th,.tableWrap td{padding:13px 15px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}.tableWrap th{background:#fafafa;color:#777;font-size:12px}.tableWrap td button{margin-right:7px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;background:#fff}.tableWrap td .danger{color:#a51d2d}.overlay{position:fixed;inset:0;z-index:80;padding:20px;display:grid;place-items:center;background:rgba(0,0,0,.45)}.modal{width:min(680px,100%);max-height:90vh;overflow:auto;padding:25px;border-radius:14px;background:#fff}.grid{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid label{display:grid;gap:6px;font-size:13px;font-weight:700}.grid input,.grid select{padding:10px;border:1px solid #ccc;border-radius:7px}.check{margin-top:15px;display:flex;gap:8px}.actions{margin-top:22px;display:flex;justify-content:flex-end;gap:9px}.actions button:first-child{background:#e8e8e8;color:#222}.toast{position:fixed;right:20px;bottom:20px;padding:13px 16px;border-radius:8px;background:#111;color:#fff}@media(max-width:700px){.content{padding:20px}.grid{grid-template-columns:1fr}.toolbar{align-items:flex-start;flex-direction:column}}
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: #f1f1f1;
+}
+
+.main {
+  min-width: 0;
+  flex: 1;
+}
+
+.content {
+  max-width: 1200px;
+  margin: auto;
+  padding: 28px 32px 50px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.toolbar p {
+  margin-top: 5px;
+  color: #777;
+}
+
+.toolbar button,
+.actions button {
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #111;
+  color: #fff;
+  font-weight: 700;
+}
+
+.error {
+  margin-top: 18px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fdecee;
+  color: #a51d2d;
+}
+
+.state {
+  margin-top: 22px;
+}
+
+.tableWrap {
+  margin-top: 22px;
+  overflow: auto;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.tableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 13px 15px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tableWrap th {
+  background: #fafafa;
+  color: #777;
+  font-size: 12px;
+}
+
+.tableWrap td button {
+  margin-right: 7px;
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.tableWrap td .danger {
+  color: #a51d2d;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .45);
+}
+
+.modal {
+  width: min(680px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 25px;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.grid label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.grid input,
+.grid select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 7px;
+}
+
+.check {
+  margin-top: 15px;
+  display: flex;
+  gap: 8px;
+}
+
+.actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.actions button:first-child {
+  background: #e8e8e8;
+  color: #222;
+}
+
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  padding: 13px 16px;
+  border-radius: 8px;
+  background: #111;
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .content {
+    padding: 20px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

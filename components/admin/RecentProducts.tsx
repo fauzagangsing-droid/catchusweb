@@ -1,14 +1,8 @@
 import Image from "next/image";
+import type { RecentProduct } from "@/types/dashboard";
 import styles from "./RecentProducts.module.css";
 
-export interface RecentProduct {
-  id: string;
-  name: string;
-  category: string;
-  price: string;
-  image: string;
-  featured?: boolean;
-}
+export type { RecentProduct } from "@/types/dashboard";
 
 export interface RecentProductsProps {
   products: RecentProduct[];

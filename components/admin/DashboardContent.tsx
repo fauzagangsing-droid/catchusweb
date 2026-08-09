@@ -54,7 +54,7 @@ export default function DashboardContent({ stats, recentProducts }: DashboardCon
             />
           </section>
 
-          <section className={styles.quickActionsSection}>
+          <section>
             <h2 className={styles.sectionHeading}>Quick Actions</h2>
             <div className={styles.quickActionsGrid}>
               <QuickAction

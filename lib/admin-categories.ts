@@ -1,7 +1,10 @@
 "use client";
 
+import { slugify } from "@/lib/slugify";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Category, CategoryInsert, CategoryUpdate } from "@/types/database";
+
+export { slugify };
 
 export interface AdminQueryResult<T> {
   data: T | null;
@@ -40,17 +43,6 @@ function toFriendlyError(rawMessage: string): string {
     return "Couldn't reach the server. Please check your connection and try again.";
   }
   return "Something went wrong. Please try again.";
-}
-
-/** Converts a category name to the lowercase, hyphen-separated URL slug used by the storefront. */
-export function slugify(input: string): string {
-  return input
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 export function validateCategoryForm(values: CategoryFormValues): CategoryFormErrors {

@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatRupiah } from "@/lib/adapters";
+
+import { formatRupiah, resolveProductImage } from "@/lib/adapters";
 import {
   calculateCartTotals,
   friendlyCartError,
@@ -17,15 +18,6 @@ import styles from "./CartPage.module.css";
 
 interface CartPageClientProps {
   brandName: string;
-}
-
-function getProductImage(item: CartItemWithProduct): string {
-  const images = item.product?.product_images ?? [];
-  return (
-    images.find((image) => image.is_thumbnail)?.image_url ??
-    images[0]?.image_url ??
-    "/images/catchus.PNG"
-  );
 }
 
 export default function CartPageClient({ brandName }: CartPageClientProps) {
@@ -167,7 +159,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                   <article className={styles.item} key={item.id}>
                     <div className={styles.imageWrap}>
                       <Image
-                        src={getProductImage(item)}
+                        src={resolveProductImage(item.product)}
                         alt={product ? `Gambar produk ${product.name}` : "Produk tidak tersedia"}
                         fill
                         sizes="(max-width: 640px) 96px, 130px"

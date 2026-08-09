@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Product } from "@/types/product";
+import type { Product } from "@/types/product";
 
 /**
  * Replicates the original script.js category filter behavior:
@@ -23,7 +23,7 @@ import { Product } from "@/types/product";
  * active filter label in state and derives which products are visible -
  * same resulting behavior, React-idiomatic implementation.
  */
-export function useProdukFilter(products: Product[]) {
+export function useProdukFilter() {
   const [activeFilter, setActiveFilter] = useState("All Produk");
 
   const isVisible = (product: Product) => {

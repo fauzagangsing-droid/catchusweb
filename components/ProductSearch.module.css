@@ -184,9 +184,10 @@
   }
 }
 
-@media (max-width: 1100px) and (min-width: 901px) {
+@media (max-width: 1440px) and (min-width: 1181px) {
   .search {
-    flex-basis: 220px;
+    flex-basis: 190px;
+    min-width: 150px;
     margin-inline: 14px;
   }
 
@@ -195,7 +196,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .search {
     order: 3;
     flex: 1 0 100%;
@@ -207,7 +208,11 @@
 
 @media (max-width: 768px) {
   .dropdown {
+    left: 0;
+    width: 100%;
+    max-width: 100%;
     max-height: min(380px, calc(100vh - 135px));
+    transform: none;
   }
 }
 

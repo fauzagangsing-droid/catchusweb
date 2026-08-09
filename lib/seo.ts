@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import { resolveProductImage } from "@/lib/adapters";
 import type { ProductWithRelations, WebsiteSettings } from "@/types/database";
 
 const DEFAULT_SITE_URL = "http://localhost:3000";
@@ -35,8 +37,7 @@ export function absoluteUrl(pathOrUrl: string): string {
 }
 
 export function getProductThumbnail(product: ProductWithRelations): string {
-  const thumbnail = product.product_images.find((image) => image.is_thumbnail);
-  return thumbnail?.image_url ?? product.product_images[0]?.image_url ?? DEFAULT_SOCIAL_IMAGE;
+  return resolveProductImage(product);
 }
 
 export function buildPublicMetadata({

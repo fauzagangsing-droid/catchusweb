@@ -1,6 +1,7 @@
 "use client";
 
 import { z } from "zod";
+import { slugify } from "@/lib/slugify";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type {
   Category,
@@ -9,6 +10,8 @@ import type {
   ProductUpdate,
   ProductWithRelations,
 } from "@/types/database";
+
+export { slugify };
 
 /**
  * Admin-only product data access, used exclusively by the Product Management
@@ -223,9 +226,9 @@ export async function setProductFeatured(
 
 /**
  * The schema has no boolean `active` column — status is one of
- * active/inactive/draft/out_of_stock. The Active toggle/filter in this
- * module treats "active" as active and everything else as inactive, and
- * toggling simply flips between those two states.
+ * active/inactive/draft/out_of_stock. The table filter selects `active` or
+ * `inactive` explicitly, while its toggle switches between those two states.
+ * Product forms may still use the other enum values.
  */
 export async function setProductStatus(
   id: string,
@@ -237,20 +240,6 @@ export async function setProductStatus(
     return { data: null, error: toFriendlyError(error.message) };
   }
   return { data: true, error: null };
-}
-
-/**
- * Slugifies a product name: lowercase, ASCII, hyphen-separated.
- * "Oversized Knit Sweater!" -> "oversized-knit-sweater"
- */
-export function slugify(input: string): string {
-  return input
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 /**

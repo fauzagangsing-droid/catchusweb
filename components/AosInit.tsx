@@ -3,14 +3,7 @@
 import { useEffect } from "react";
 import AOS from "aos";
 
-/**
- * Replaces the original inline script:
- *   <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
- *   <script>AOS.init();</script>
- *
- * Uses the npm `aos` package instead of the CDN script, initialized once
- * on mount. Renders nothing - side-effect only.
- */
+/** Initializes the AOS library once on the client; this component renders no UI. */
 export default function AosInit() {
   useEffect(() => {
     AOS.init();

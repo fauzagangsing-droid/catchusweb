@@ -1,25 +1,10 @@
 import "server-only";
+
+import { formatRupiah, resolveProductImage } from "@/lib/adapters";
+import type { DashboardStats, RecentProduct } from "@/types/dashboard";
 import type { ProductWithRelations } from "@/types/database";
-import { formatRupiah } from "@/lib/adapters";
-import type { RecentProduct } from "@/components/admin/RecentProducts";
 
-export interface DashboardStats {
-  totalProducts: number;
-  totalCategories: number;
-  featuredProducts: number;
-  latestUpdate: string;
-}
-
-/**
- * Same thumbnail-resolution rule as lib/adapters.ts's resolveImage: prefer
- * the image flagged is_thumbnail, otherwise fall back to the first image,
- * otherwise fall back to the same placeholder used on the public storefront.
- */
-function resolveThumbnail(product: ProductWithRelations): string {
-  const thumbnail = product.product_images.find((img) => img.is_thumbnail);
-  const fallback = product.product_images[0];
-  return thumbnail?.image_url ?? fallback?.image_url ?? "/images/catchus.PNG";
-}
+export type { DashboardStats } from "@/types/dashboard";
 
 /**
  * Compact relative-time label ("2h ago") for the "Latest Update" stat,
@@ -81,7 +66,7 @@ export function toRecentProducts(
     name: product.name,
     category: product.category?.name ?? "Uncategorized",
     price: formatRupiah(product.price),
-    image: resolveThumbnail(product),
+    image: resolveProductImage(product),
     featured: product.featured,
   }));
 }

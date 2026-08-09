@@ -1,14 +1,23 @@
 import type { ProductWithRelations } from "@/types/database";
 import type { Product as UiProduct } from "@/types/product";
 
+interface ProductImageSource {
+  product_images?: ReadonlyArray<{
+    image_url: string;
+    is_thumbnail: boolean;
+  }> | null;
+}
+
 export function formatRupiah(amount: number): string {
   return `Rp ${Math.round(amount).toLocaleString("id-ID")}`;
 }
 
-function resolveImage(product: ProductWithRelations): string {
-  const thumbnail = product.product_images.find((img) => img.is_thumbnail);
-  const fallback = product.product_images[0];
-  return thumbnail?.image_url ?? fallback?.image_url ?? "/images/catchus.PNG";
+export function resolveProductImage(
+  product: ProductImageSource | null | undefined
+): string {
+  const images = product?.product_images ?? [];
+  const thumbnail = images.find((image) => image.is_thumbnail);
+  return thumbnail?.image_url ?? images[0]?.image_url ?? "/images/catchus.PNG";
 }
 
 function resolveBadge(product: ProductWithRelations): string {
@@ -31,7 +40,7 @@ export function toUiProduct(product: ProductWithRelations): UiProduct {
     id: product.id,
     slug: product.slug,
     filter: (product.category?.slug ?? "uncategorized") as UiProduct["filter"],
-    image: resolveImage(product),
+    image: resolveProductImage(product),
     alt: product.name,
     badge: resolveBadge(product),
     title: product.name,
