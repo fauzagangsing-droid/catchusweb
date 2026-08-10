@@ -11,8 +11,11 @@ export const PRODUCT_IMAGE_BUCKET = "product-images";
 export const BANNER_IMAGE_BUCKET = "banner-images";
 export const PAYMENT_IMAGE_BUCKET = "payment-assets";
 export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+export const MAX_BANNER_VIDEO_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 export const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
+export const ALLOWED_BANNER_VIDEO_MIME_TYPES = ["video/mp4", "video/webm"];
+export const ALLOWED_BANNER_VIDEO_EXTENSIONS = ["mp4", "webm"];
 
 function getExtension(fileName: string): string {
   return fileName.split(".").pop()?.toLowerCase() ?? "";
@@ -32,6 +35,21 @@ export function validateImageFile(file: File): string | null {
   }
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
     return "Image must be 5 MB or smaller.";
+  }
+  return null;
+}
+
+/** Validates background video uploads for homepage campaigns. */
+export function validateBannerVideoFile(file: File): string | null {
+  const extension = getExtension(file.name);
+  const extensionOk = ALLOWED_BANNER_VIDEO_EXTENSIONS.includes(extension);
+  const mimeOk = ALLOWED_BANNER_VIDEO_MIME_TYPES.includes(file.type);
+
+  if (!extensionOk || !mimeOk) {
+    return "Only MP4 or WEBM videos are allowed.";
+  }
+  if (file.size > MAX_BANNER_VIDEO_SIZE_BYTES) {
+    return "Video must be 50 MB or smaller.";
   }
   return null;
 }
@@ -160,6 +178,15 @@ export function uploadProductImage(
 
 /** Uploads a banner image through the same authenticated, progress-aware flow as product images. */
 export function uploadBannerImage(
+  bannerId: string,
+  file: File,
+  onProgress: (percent: number) => void
+): CancellableUpload {
+  return uploadImage(BANNER_IMAGE_BUCKET, bannerId, file, onProgress);
+}
+
+/** Uploads a banner video to the existing protected campaign media bucket. */
+export function uploadBannerVideo(
   bannerId: string,
   file: File,
   onProgress: (percent: number) => void

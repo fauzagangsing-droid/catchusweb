@@ -1,0 +1,38 @@
+.form { display: flex; flex-direction: column; gap: 18px; }
+.section { overflow: hidden; border: 1px solid #ececec; border-radius: 12px; background: #fff; }
+.sectionHeader { padding: 16px 18px; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
+.sectionHeader h3 { color: #111; font-size: 14px; }
+.sectionHeader p { margin-top: 4px; color: #888; font-size: 12px; line-height: 1.4; }
+.sectionBody { padding: 18px; display: flex; flex-direction: column; gap: 15px; }
+.row, .imageGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.field, .imageField { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.label { color: #111; font-size: 13px; font-weight: 600; }
+.hint { display: block; margin-top: 3px; color: #999; font-size: 11.5px; }
+.input, .textarea { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e2e2; border-radius: 8px; background: #fff; color: #000; font: inherit; font-size: 14px; outline: none; transition: border-color .2s ease, box-shadow .2s ease; }
+.textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
+.input:focus, .textarea:focus { border-color: #000; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+.input[aria-invalid="true"], .textarea[aria-invalid="true"] { border-color: #e63946; }
+.fieldError { color: #b3222f; font-size: 12px; }
+.mediaError { grid-column: 1 / -1; padding: 10px 12px; border: 1px solid #f3c4c9; border-radius: 8px; background: #fdecee; color: #b3222f; font-size: 12px; }
+.imageLabelRow { min-height: 43px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.imagePicker { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1.5px dashed #d8d8d8; border-radius: 10px; background: #f7f7f7; cursor: pointer; }
+.imagePicker img, .imagePicker video { width: 100%; height: 100%; display: block; object-fit: cover; }
+.emptyImage { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #777; font-size: 12.5px; font-weight: 600; }
+.emptyImage i { color: #aaa; font-size: 28px; }
+.hiddenInput { display: none; }
+.removeImageBtn { border: 0; background: transparent; color: #b3222f; font-size: 12px; font-weight: 600; cursor: pointer; }
+.uploadOverlay { position: absolute; inset: 0; background: rgba(0,0,0,.58); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.toggleField { min-height: 68px; margin-top: 20px; padding: 11px 13px; border: 1.5px solid #e2e2e2; border-radius: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.toggleField input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: #000; }
+.toggleField span { display: flex; flex-direction: column; gap: 2px; color: #333; font-size: 13px; }
+.toggleField small { color: #888; font-size: 11.5px; }
+.errorBox { padding: 11px 13px; border: 1px solid #f3c4c9; border-radius: 8px; background: #fdecee; color: #b3222f; display: flex; align-items: flex-start; gap: 8px; font-size: 13px; }
+.actions { position: sticky; bottom: -24px; z-index: 5; margin: 0 -24px -24px; padding: 16px 24px 24px; border-top: 1px solid #ededed; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); display: flex; justify-content: flex-end; gap: 12px; }
+.cancelBtn, .submitBtn { padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.cancelBtn { border: 1.5px solid #e2e2e2; background: #fff; color: #333; }
+.submitBtn { min-width: 132px; border: 0; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; gap: 9px; }
+.cancelBtn:disabled, .submitBtn:disabled, .removeImageBtn:disabled { opacity: .65; cursor: not-allowed; }
+.spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 700px) { .row, .imageGrid { grid-template-columns: 1fr; } .toggleField { margin-top: 0; } }
+@media (max-width: 480px) { .sectionBody, .sectionHeader { padding: 15px; } .actions { flex-direction: column-reverse; } .cancelBtn, .submitBtn { width: 100%; } }

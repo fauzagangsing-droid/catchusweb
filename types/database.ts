@@ -340,6 +340,8 @@ export type Banner = {
   button_url: string | null;
   desktop_image_url: string | null;
   mobile_image_url: string | null;
+  desktop_video_url: string | null;
+  mobile_video_url: string | null;
   is_active: boolean;
   display_order: number;
   created_at: string;
@@ -354,6 +356,8 @@ export type BannerInsert = {
   button_url?: string | null;
   desktop_image_url?: string | null;
   mobile_image_url?: string | null;
+  desktop_video_url?: string | null;
+  mobile_video_url?: string | null;
   is_active?: boolean;
   display_order?: number;
 };

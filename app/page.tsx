@@ -6,7 +6,7 @@ import Layanan from "@/components/Layanan";
 import ProdukSection from "@/components/ProdukSection";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
-import { getCategories, getProducts, getWebsiteSettings } from "@/lib/queries";
+import { getActiveBanners, getCategories, getProducts, getWebsiteSettings } from "@/lib/queries";
 import { toUiProduct } from "@/lib/adapters";
 import { buildOrganizationJsonLd, buildPublicMetadata } from "@/lib/seo";
 import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
@@ -39,10 +39,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [categoriesResult, productsResult, settingsResult] = await Promise.all([
+  const [categoriesResult, productsResult, settingsResult, bannersResult] = await Promise.all([
     getCategories(),
     getProducts(),
     getWebsiteSettings(),
+    getActiveBanners(),
   ]);
   const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
 
@@ -59,7 +60,13 @@ export default async function Home() {
     <>
       <JsonLd data={buildOrganizationJsonLd(settings)} />
       <Navbar brandName={settings.brand_name} logoUrl={settings.logo_url} />
-      <Hero title={settings.hero_title} subtitle={settings.hero_subtitle} buttonText={settings.hero_button_text} buttonUrl={settings.hero_button_url} />
+      <Hero
+        banners={bannersResult.data ?? []}
+        title={settings.hero_title}
+        subtitle={settings.hero_subtitle}
+        buttonText={settings.hero_button_text}
+        buttonUrl={settings.hero_button_url}
+      />
       <ModelGallery />
       <Layanan brandName={settings.brand_name} />
       <ProdukSection
