@@ -3,7 +3,7 @@ export default function Layanan({ brandName }: { brandName: string }) {
     <div className="layanan" id="layanan">
       <div className="container">
         <div className="layanan-box">
-          <div className="box" data-aos="fade-up" data-aos-duration="1000">
+          <div className="box">
             <i className="ri-star-fill ri-2x"></i>
             <h2>Produk Original</h2>
             <p>
@@ -15,7 +15,7 @@ export default function Layanan({ brandName }: { brandName: string }) {
               prioritas kami.
             </p>
           </div>
-          <div className="box" data-aos="fade-down" data-aos-duration="1000">
+          <div className="box">
             <i className="ri-price-tag-fill ri-2x"></i>
             <h2>Harga Terjangkau</h2>
             <p>
@@ -26,7 +26,7 @@ export default function Layanan({ brandName }: { brandName: string }) {
               yang tetap bersahabat.
             </p>
           </div>
-          <div className="box" data-aos="fade-up" data-aos-duration="1000">
+          <div className="box">
             <i className="ri-shopping-cart-fill ri-2x"></i>
             <h2>Terjual 100+</h2>
             <p>

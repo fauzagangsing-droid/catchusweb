@@ -357,7 +357,6 @@ body {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity .65s ease, visibility .65s ease;
 }
 
 .hero-slide.is-active {
@@ -401,14 +400,6 @@ body {
     width: min(100%, 1480px);
     margin-inline: auto;
     padding: 72px clamp(28px, 6vw, 108px) 88px;
-    transform: translateY(18px);
-    opacity: 0;
-    transition: transform .65s ease .12s, opacity .65s ease .12s;
-}
-
-.hero-slide.is-active .hero-content {
-    transform: translateY(0);
-    opacity: 1;
 }
 
 .hero-content h1 {
@@ -451,7 +442,6 @@ body {
     letter-spacing: .09em;
     text-transform: uppercase;
     overflow-wrap: anywhere;
-    transition: background-color .2s ease, color .2s ease;
 }
 
 .hero-content a:hover,
@@ -502,7 +492,6 @@ body {
     border: 0;
     background: rgba(255, 255, 255, .38);
     cursor: pointer;
-    transition: background-color .2s ease, transform .2s ease;
 }
 
 .hero-pagination button.is-active {
@@ -527,7 +516,6 @@ body {
     font-size: 1.05rem;
     cursor: pointer;
     backdrop-filter: blur(6px);
-    transition: background-color .2s ease, border-color .2s ease;
 }
 
 .hero-arrows button:hover,
@@ -596,13 +584,6 @@ body {
     .hero-arrows button {
         width: 36px;
         height: 36px;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .hero-slide,
-    .hero-content {
-        transition: none;
     }
 }
 

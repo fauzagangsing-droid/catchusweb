@@ -20,7 +20,7 @@ export default function ProdukSection({
   return (
     <div className="produk" id="produk">
       <div className="container">
-        <div className="produk-box" data-aos="fade-down" data-aos-duration="1000">
+        <div className="produk-box">
           <h2>Produk Kami</h2>
 
           {errorMessage ? (

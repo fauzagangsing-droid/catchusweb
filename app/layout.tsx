@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import AosInit from "@/components/AosInit";
 import CartProvider from "@/components/cart/CartProvider";
 import { getWebsiteSettings } from "@/lib/queries";
 import { getSiteUrl } from "@/lib/seo";
@@ -39,16 +38,12 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/npm/remixicon@4.7.0/fonts/remixicon.css"
           rel="stylesheet"
         />
-        {/* AOS styles - kept as CDN link, exactly as in the original site */}
-        <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
       </head>
       <body
         id="beranda"
         className={`${plusJakartaSans.variable} ${plusJakartaSans.className}`}
       >
         <CartProvider>{children}</CartProvider>
-        {/* Replaces the inline <script>AOS.init()</script> from index.html */}
-        <AosInit />
       </body>
     </html>
   );

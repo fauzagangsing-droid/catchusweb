@@ -4,7 +4,7 @@ export default function ModelGallery() {
   return (
     <div className="Model" id="Model">
       <div className="container">
-        <div className="Model-box" data-aos="fade-down" data-aos-duration="1000">
+        <div className="Model-box">
           <div className="Model-list">
             {modelImages.map((model) => (
               // Plain img elements preserve the gallery's existing CSS and loading behavior.
