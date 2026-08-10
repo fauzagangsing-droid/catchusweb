@@ -696,57 +696,6 @@ body {
 
 /* Model */
 
-/* Layanan */
-.layanan {
-    padding-top: 60px;
-    padding-bottom: 60px;
-}
-
-.layanan-box {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 30px;
-}
-
-.layanan-box .box {
-    min-width: 0;
-    background-color: white;
-    padding: 20px;
-    border-radius: 10px;
-    overflow-wrap: anywhere;
-}
-
-.layanan-box .box:hover {
-    background-color: black;
-}
-
-.layanan-box .box:hover > * {
-    color: white;
-}
-
-.layanan-box .box i {
-    color: black;
-}
-
-.layanan-box .box h2 {
-    margin-top: 20px;
-    margin-bottom: 5px;
-}
-
-@media (max-width: 992px) {
-    .layanan-box {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 575px) {
-    .layanan-box {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Layanan */
-
 /* Produk */
 .produk {
     padding-bottom: 60px;

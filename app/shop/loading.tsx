@@ -1,5 +1,5 @@
-// Root-segment loading fallback. It reuses existing storefront classes so no
-// additional global styling is needed.
+// Shop-segment loading fallback. It reuses the existing catalog classes so no
+// additional styling is needed.
 export default function Loading() {
   return (
     <div className="produk">

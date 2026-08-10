@@ -33,10 +33,10 @@ export default function Navbar({ brandName, logoUrl }: NavbarProps) {
               <a href="/#beranda">Beranda</a>
             </li>
             <li>
-              <a href="/#layanan">Layanan</a>
+              <a href="/shop">Shop</a>
             </li>
             <li>
-              <a href="/#produk">Product</a>
+              <a href="/shop#produk">Product</a>
             </li>
             <li>
               <a href="/#kontak">Kontak</a>
