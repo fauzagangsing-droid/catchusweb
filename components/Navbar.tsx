@@ -36,9 +36,6 @@ export default function Navbar({ brandName, logoUrl }: NavbarProps) {
               <a href="/shop">Shop</a>
             </li>
             <li>
-              <a href="/shop#produk">Product</a>
-            </li>
-            <li>
               <a href="/#kontak">Kontak</a>
             </li>
             <li className="cart-nav-item">

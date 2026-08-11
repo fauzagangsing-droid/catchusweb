@@ -10,6 +10,8 @@ export interface ProductTableProps {
   products: ProductWithRelations[];
   loading: boolean;
   togglingId: string | null;
+  newArrivalCount: number;
+  newArrivalLimit: number;
   onEdit: (product: ProductWithRelations) => void;
   onDelete: (product: ProductWithRelations) => void;
   onToggleFeatured: (product: ProductWithRelations) => void;
@@ -20,6 +22,8 @@ export default function ProductTable({
   products,
   loading,
   togglingId,
+  newArrivalCount,
+  newArrivalLimit,
   onEdit,
   onDelete,
   onToggleFeatured,
@@ -36,7 +40,7 @@ export default function ProductTable({
               <th>Price</th>
               <th>Stock</th>
               <th>Weight</th>
-              <th>Featured</th>
+              <th>New Arrival</th>
               <th>Active</th>
               <th className={styles.thActions}>Actions</th>
             </tr>
@@ -59,6 +63,8 @@ export default function ProductTable({
               products.map((product) => {
                 const isToggling = togglingId === product.id;
                 const isActive = product.status === "active";
+                const newArrivalLimitReached =
+                  !product.featured && newArrivalCount >= newArrivalLimit;
                 return (
                   <tr key={product.id}>
                     <td>
@@ -87,18 +93,48 @@ export default function ProductTable({
                     <td>{product.stock}</td>
                     <td>{product.weight} kg</td>
                     <td>
-                      <button
-                        type="button"
-                        className={`${styles.toggleBtn} ${
-                          product.featured ? styles.toggleBtnOn : ""
-                        }`}
-                        onClick={() => onToggleFeatured(product)}
-                        disabled={isToggling}
-                        aria-pressed={product.featured}
-                        title={product.featured ? "Unmark as featured" : "Mark as featured"}
-                      >
-                        <i className={product.featured ? "ri-star-fill" : "ri-star-line"} />
-                      </button>
+                      <div className={styles.newArrivalCell}>
+                        {product.new_arrival_image_url ? (
+                          <div className={styles.newArrivalThumb}>
+                            <Image
+                              src={product.new_arrival_image_url}
+                              alt=""
+                              fill
+                              sizes="38px"
+                              className={styles.thumb}
+                              unoptimized
+                            />
+                          </div>
+                        ) : (
+                          <span className={styles.thumbnailMissing}>No custom image</span>
+                        )}
+                        <button
+                          type="button"
+                          className={`${styles.toggleBtn} ${
+                            product.featured ? styles.toggleBtnOn : ""
+                          }`}
+                          onClick={() => onToggleFeatured(product)}
+                          disabled={isToggling || newArrivalLimitReached}
+                          aria-pressed={product.featured}
+                          aria-label={
+                            product.featured
+                              ? `Remove ${product.name} from New Arrivals`
+                              : `Mark ${product.name} as a New Arrival`
+                          }
+                          title={
+                            product.featured
+                              ? "Remove from New Arrivals"
+                              : newArrivalLimitReached
+                                ? `New Arrivals limit reached (${newArrivalLimit} maximum)`
+                                : product.new_arrival_image_url
+                                  ? "Mark as a New Arrival"
+                                  : "Edit this product and upload a custom New Arrival thumbnail first"
+                          }
+                        >
+                          <i className={product.featured ? "ri-star-fill" : "ri-star-line"} />
+                          <span>{product.featured ? "Selected" : "Not selected"}</span>
+                        </button>
+                      </div>
                     </td>
                     <td>
                       <button

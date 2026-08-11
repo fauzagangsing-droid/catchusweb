@@ -57,6 +57,28 @@ export const getProducts = cache(
   }
 );
 
+/** Two active products selected by an admin for homepage New Arrivals. */
+export const getBestSellerProducts = cache(
+  async (): Promise<QueryResult<ProductWithRelations[]>> => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        `
+          *,
+          category:categories ( * ),
+          product_images ( * )
+        `
+      )
+      .eq("status", "active")
+      .eq("featured", true)
+      .order("updated_at", { ascending: false })
+      .limit(2);
+
+    if (error) return { data: null, error: error.message };
+    return { data: data ?? [], error: null };
+  }
+);
+
 /** Active products belonging to one category. */
 export const getProductsByCategory = cache(
   async (categoryId: string): Promise<QueryResult<ProductWithRelations[]>> => {

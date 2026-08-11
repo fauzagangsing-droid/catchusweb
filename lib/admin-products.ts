@@ -29,6 +29,14 @@ export interface AdminQueryResult<T> {
   error: string | null;
 }
 
+export const NEW_ARRIVAL_LIMIT = 2;
+export const NEW_ARRIVAL_LIMIT_MESSAGE =
+  "Only 2 New Arrival products can be selected. Remove one before selecting another.";
+export const NEW_ARRIVAL_THUMBNAIL_REQUIRED_MESSAGE =
+  "Upload a custom New Arrival thumbnail before selecting this product.";
+export const NEW_ARRIVAL_ACTIVE_REQUIRED_MESSAGE =
+  "Only active products can be selected for New Arrivals.";
+
 export type FeaturedFilter = "all" | "featured" | "not_featured";
 export type ActiveFilter = "all" | "active" | "inactive";
 
@@ -49,11 +57,21 @@ export interface ProductListParams {
 export interface ProductListResult {
   products: ProductWithRelations[];
   totalCount: number;
+  newArrivalCount: number;
 }
 
 function toFriendlyError(rawMessage: string): string {
   const message = rawMessage.toLowerCase();
 
+  if (message.includes("new_arrival_limit_reached")) {
+    return NEW_ARRIVAL_LIMIT_MESSAGE;
+  }
+  if (message.includes("new_arrival_thumbnail_required")) {
+    return NEW_ARRIVAL_THUMBNAIL_REQUIRED_MESSAGE;
+  }
+  if (message.includes("new_arrival_active_required")) {
+    return NEW_ARRIVAL_ACTIVE_REQUIRED_MESSAGE;
+  }
   if (message.includes("duplicate key") && message.includes("slug")) {
     return "That slug is already in use by another product. Try a different one.";
   }
@@ -142,18 +160,30 @@ export async function getAdminProducts(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await query
-    .order(sortField, { ascending: sortDirection === "asc" })
-    .range(from, to);
+  const [productsResult, newArrivalResult] = await Promise.all([
+    query
+      .order(sortField, { ascending: sortDirection === "asc" })
+      .range(from, to),
+    supabaseBrowser
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("featured", true),
+  ]);
+
+  const { data, error, count } = productsResult;
 
   if (error) {
     return { data: null, error: toFriendlyError(error.message) };
+  }
+  if (newArrivalResult.error) {
+    return { data: null, error: toFriendlyError(newArrivalResult.error.message) };
   }
 
   return {
     data: {
       products: data ?? [],
       totalCount: count ?? 0,
+      newArrivalCount: newArrivalResult.count ?? 0,
     },
     error: null,
   };
@@ -216,6 +246,34 @@ export async function setProductFeatured(
   id: string,
   featured: boolean
 ): Promise<AdminQueryResult<true>> {
+  if (featured) {
+    const { data: product, error: productError } = await supabaseBrowser
+      .from("products")
+      .select("new_arrival_image_url")
+      .eq("id", id)
+      .single();
+
+    if (productError) {
+      return { data: null, error: toFriendlyError(productError.message) };
+    }
+    if (!product.new_arrival_image_url) {
+      return { data: null, error: NEW_ARRIVAL_THUMBNAIL_REQUIRED_MESSAGE };
+    }
+
+    const { count, error: countError } = await supabaseBrowser
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("featured", true)
+      .neq("id", id);
+
+    if (countError) {
+      return { data: null, error: toFriendlyError(countError.message) };
+    }
+    if ((count ?? 0) >= NEW_ARRIVAL_LIMIT) {
+      return { data: null, error: NEW_ARRIVAL_LIMIT_MESSAGE };
+    }
+  }
+
   const { error } = await supabaseBrowser.from("products").update({ featured }).eq("id", id);
 
   if (error) {
@@ -288,6 +346,10 @@ export interface ProductFormValues {
   tiktokShopUrl: string;
   lazadaUrl: string;
   blibliUrl: string;
+  newArrivalThumbnail: {
+    imageUrl: string | null;
+    file: File | null;
+  };
   images: ProductImagesFieldValue;
 }
 
@@ -358,7 +420,7 @@ const productFormSchema = z
  * messages. Returns an empty object when the form is valid.
  */
 export function validateProductForm(
-  values: Omit<ProductFormValues, "images">
+  values: Omit<ProductFormValues, "images" | "newArrivalThumbnail">
 ): ProductFormErrors {
   const errors: ProductFormErrors = {};
   const result = productFormSchema.safeParse(values);

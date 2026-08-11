@@ -1,8 +1,17 @@
 "use client";
 
-import { useCallback, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import type { Category, ProductStatus, ProductWithRelations } from "@/types/database";
 import { DEFAULT_PRODUCT_WEIGHT_KG } from "@/lib/product-weight";
+import { validateImageFile } from "@/lib/storage";
 import {
   slugify,
   validateProductForm,
@@ -17,11 +26,13 @@ export interface ProductFormProps {
   initialProduct?: ProductWithRelations | null;
   submitting: boolean;
   serverError: string | null;
+  newArrivalLimitReached: boolean;
+  newArrivalUploadProgress: number | null;
   onSubmit: (values: ProductFormValues) => void;
   onCancel: () => void;
 }
 
-type TextFieldValues = Omit<ProductFormValues, "images">;
+type TextFieldValues = Omit<ProductFormValues, "images" | "newArrivalThumbnail">;
 
 function toFormValues(product?: ProductWithRelations | null): TextFieldValues {
   return {
@@ -51,12 +62,23 @@ export default function ProductForm({
   initialProduct,
   submitting,
   serverError,
+  newArrivalLimitReached,
+  newArrivalUploadProgress,
   onSubmit,
   onCancel,
 }: ProductFormProps) {
   const [values, setValues] = useState<TextFieldValues>(() => toFormValues(initialProduct));
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [slugTouched, setSlugTouched] = useState(Boolean(initialProduct));
+  const [newArrivalImageUrl, setNewArrivalImageUrl] = useState<string | null>(
+    initialProduct?.new_arrival_image_url ?? null
+  );
+  const [newArrivalImageFile, setNewArrivalImageFile] = useState<File | null>(null);
+  const [newArrivalPreview, setNewArrivalPreview] = useState<string | null>(
+    initialProduct?.new_arrival_image_url ?? null
+  );
+  const [newArrivalImageError, setNewArrivalImageError] = useState<string | null>(null);
+  const newArrivalObjectUrlRef = useRef<string | null>(null);
   const clientProductId = useMemo(() => initialProduct?.id ?? crypto.randomUUID(), [initialProduct]);
   const initialImages = useMemo(() => initialProduct?.product_images ?? [], [initialProduct]);
   const [imagesValue, setImagesValue] = useState<ProductFormValues["images"]>(() => ({
@@ -77,6 +99,50 @@ export default function ProductForm({
     setImagesValue(next);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (newArrivalObjectUrlRef.current) {
+        URL.revokeObjectURL(newArrivalObjectUrlRef.current);
+      }
+    };
+  }, []);
+
+  const selectNewArrivalImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setNewArrivalImageError(validationError);
+      return;
+    }
+
+    if (newArrivalObjectUrlRef.current) {
+      URL.revokeObjectURL(newArrivalObjectUrlRef.current);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    newArrivalObjectUrlRef.current = previewUrl;
+    setNewArrivalImageFile(file);
+    setNewArrivalPreview(previewUrl);
+    setNewArrivalImageError(null);
+  };
+
+  const removeNewArrivalImage = () => {
+    if (newArrivalObjectUrlRef.current) {
+      URL.revokeObjectURL(newArrivalObjectUrlRef.current);
+      newArrivalObjectUrlRef.current = null;
+    }
+    setNewArrivalImageFile(null);
+    setNewArrivalImageUrl(null);
+    setNewArrivalPreview(null);
+    setNewArrivalImageError(
+      values.featured
+        ? "A custom thumbnail is required while this product is selected for New Arrivals."
+        : null
+    );
+  };
+
   const setField = <K extends keyof TextFieldValues>(field: K, value: TextFieldValues[K]) => {
     setValues((current) => ({ ...current, [field]: value }));
     if (errors[field]) setErrors((current) => ({ ...current, [field]: undefined }));
@@ -94,8 +160,26 @@ export default function ProductForm({
     event.preventDefault();
     const nextErrors = validateProductForm(values);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0 && !imagesValue.uploading) {
-      onSubmit({ ...values, images: imagesValue });
+    const missingNewArrivalImage =
+      values.featured && !newArrivalImageUrl && !newArrivalImageFile;
+    setNewArrivalImageError(
+      missingNewArrivalImage
+        ? "Upload a custom thumbnail for this selected New Arrival product."
+        : null
+    );
+    if (
+      Object.keys(nextErrors).length === 0 &&
+      !imagesValue.uploading &&
+      !missingNewArrivalImage
+    ) {
+      onSubmit({
+        ...values,
+        newArrivalThumbnail: {
+          imageUrl: newArrivalImageUrl,
+          file: newArrivalImageFile,
+        },
+        images: imagesValue,
+      });
     }
   };
 
@@ -231,11 +315,21 @@ export default function ProductForm({
               </select>
             </div>
             <div className={styles.toggleWrap}>
-              <span className={styles.label}>Featured</span>
+              <span className={styles.label}>New Arrival</span>
               <label className={styles.toggleField}>
-                <input type="checkbox" checked={values.featured} onChange={(event) => setField("featured", event.target.checked)} disabled={submitting} />
-                <span>Highlight this product in featured selections</span>
+                <input
+                  type="checkbox"
+                  checked={values.featured}
+                  onChange={(event) => setField("featured", event.target.checked)}
+                  disabled={submitting || (newArrivalLimitReached && !values.featured)}
+                />
+                <span>Show this product in the homepage New Arrivals section</span>
               </label>
+              {newArrivalLimitReached && !values.featured && (
+                <span className={styles.fieldError}>
+                  The 2 New Arrival slots are full. Remove one before selecting this product.
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -266,6 +360,65 @@ export default function ProductForm({
         </div>
         <div className={styles.sectionBody}>
           <ImageUploader productId={clientProductId} initialImages={initialImages} disabled={submitting} onChange={handleImagesChange} />
+        </div>
+      </section>
+
+      <section className={styles.section} aria-labelledby="new-arrival-image-heading">
+        <div className={styles.sectionHeader}>
+          <h3 id="new-arrival-image-heading">New Arrival Thumbnail</h3>
+          <p>
+            Used only by the homepage New Arrivals card. The product thumbnail and gallery
+            are not changed.
+          </p>
+        </div>
+        <div className={styles.sectionBody}>
+          <div className={styles.newArrivalImageField}>
+            <div className={styles.newArrivalImageHeader}>
+              <div>
+                <span className={styles.label}>Custom homepage image</span>
+                <span className={styles.hint}>JPG, PNG or WEBP · max 5 MB</span>
+              </div>
+              {newArrivalPreview && (
+                <button
+                  type="button"
+                  className={styles.removeThumbnailBtn}
+                  onClick={removeNewArrivalImage}
+                  disabled={submitting}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+
+            <label className={styles.newArrivalImagePicker} htmlFor="new-arrival-image">
+              {newArrivalPreview ? (
+                // Preview may be a local object URL or a Supabase public URL.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={newArrivalPreview} alt="New Arrival thumbnail preview" />
+              ) : (
+                <span className={styles.newArrivalImageEmpty}>
+                  <i className="ri-image-add-line" aria-hidden="true" />
+                  Choose a custom thumbnail
+                </span>
+              )}
+              {newArrivalUploadProgress !== null && (
+                <span className={styles.thumbnailUploadOverlay}>
+                  Uploading {newArrivalUploadProgress}%
+                </span>
+              )}
+            </label>
+            <input
+              id="new-arrival-image"
+              className={styles.hiddenInput}
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp"
+              onChange={selectNewArrivalImage}
+              disabled={submitting}
+            />
+            {newArrivalImageError && (
+              <span className={styles.fieldError}>{newArrivalImageError}</span>
+            )}
+          </div>
         </div>
       </section>
 

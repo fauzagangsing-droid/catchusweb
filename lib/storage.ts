@@ -176,6 +176,19 @@ export function uploadProductImage(
   return uploadImage(PRODUCT_IMAGE_BUCKET, productId, file, onProgress);
 }
 
+/**
+ * Uploads the homepage New Arrivals thumbnail into its own namespace inside
+ * the existing product-media bucket. It never creates or updates a
+ * product_images row, so the catalog thumbnail and gallery remain untouched.
+ */
+export function uploadNewArrivalImage(
+  productId: string,
+  file: File,
+  onProgress: (percent: number) => void
+): CancellableUpload {
+  return uploadImage(PRODUCT_IMAGE_BUCKET, `new-arrivals/${productId}`, file, onProgress);
+}
+
 /** Uploads a banner image through the same authenticated, progress-aware flow as product images. */
 export function uploadBannerImage(
   bannerId: string,

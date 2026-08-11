@@ -85,11 +85,11 @@ export default function ProductFilters({
           className={styles.select}
           value={featured}
           onChange={(e) => onFeaturedChange(e.target.value as FeaturedFilter)}
-          aria-label="Filter by featured"
+          aria-label="Filter by New Arrival"
         >
           <option value="all">All Products</option>
-          <option value="featured">Featured Only</option>
-          <option value="not_featured">Not Featured</option>
+          <option value="featured">New Arrivals Only</option>
+          <option value="not_featured">Not New Arrival</option>
         </select>
 
         <select

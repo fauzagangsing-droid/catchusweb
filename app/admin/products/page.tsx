@@ -11,6 +11,10 @@ import ProductModal from "@/components/admin/ProductModal";
 import ProductForm from "@/components/admin/ProductForm";
 import DeleteDialog from "@/components/admin/DeleteDialog";
 import {
+  NEW_ARRIVAL_ACTIVE_REQUIRED_MESSAGE,
+  NEW_ARRIVAL_LIMIT,
+  NEW_ARRIVAL_LIMIT_MESSAGE,
+  NEW_ARRIVAL_THUMBNAIL_REQUIRED_MESSAGE,
   createProduct,
   deleteProduct,
   getAdminProducts,
@@ -25,7 +29,12 @@ import {
   type SortDirection,
 } from "@/lib/admin-products";
 import { syncProductImages } from "@/lib/product-images";
-import { deleteStorageImage, getImagePathFromPublicUrl } from "@/lib/storage";
+import {
+  PRODUCT_IMAGE_BUCKET,
+  deleteStorageImage,
+  getImagePathFromPublicUrl,
+  uploadNewArrivalImage,
+} from "@/lib/storage";
 import type { Category, ProductWithRelations } from "@/types/database";
 import styles from "./products.module.css";
 
@@ -38,6 +47,7 @@ function ProductsContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<ProductWithRelations[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [newArrivalCount, setNewArrivalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
 
@@ -56,6 +66,7 @@ function ProductsContent() {
   const [editingProduct, setEditingProduct] = useState<ProductWithRelations | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [newArrivalUploadProgress, setNewArrivalUploadProgress] = useState<number | null>(null);
 
   const [deletingProduct, setDeletingProduct] = useState<ProductWithRelations | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
@@ -101,9 +112,11 @@ function ProductsContent() {
       setListError(error);
       setProducts([]);
       setTotalCount(0);
+      setNewArrivalCount(0);
     } else if (data) {
       setProducts(data.products);
       setTotalCount(data.totalCount);
+      setNewArrivalCount(data.newArrivalCount);
     }
 
     setLoading(false);
@@ -135,13 +148,29 @@ function ProductsContent() {
   };
 
   const handleToggleFeatured = async (product: ProductWithRelations) => {
-    setTogglingId(product.id);
     const nextFeatured = !product.featured;
+
+    if (nextFeatured && !product.new_arrival_image_url) {
+      setListError(NEW_ARRIVAL_THUMBNAIL_REQUIRED_MESSAGE);
+      return;
+    }
+    if (nextFeatured && product.status !== "active") {
+      setListError(NEW_ARRIVAL_ACTIVE_REQUIRED_MESSAGE);
+      return;
+    }
+    if (nextFeatured && newArrivalCount >= NEW_ARRIVAL_LIMIT) {
+      setListError(NEW_ARRIVAL_LIMIT_MESSAGE);
+      return;
+    }
+
+    setListError(null);
+    setTogglingId(product.id);
 
     // Optimistic update so the UI feels instant; reconciled by loadProducts on success.
     setProducts((prev) =>
       prev.map((p) => (p.id === product.id ? { ...p, featured: nextFeatured } : p))
     );
+    setNewArrivalCount((current) => Math.max(0, current + (nextFeatured ? 1 : -1)));
 
     const { error } = await setProductFeatured(product.id, nextFeatured);
 
@@ -149,6 +178,7 @@ function ProductsContent() {
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? { ...p, featured: product.featured } : p))
       );
+      setNewArrivalCount((current) => Math.max(0, current + (nextFeatured ? -1 : 1)));
       setListError(error);
     }
 
@@ -158,6 +188,12 @@ function ProductsContent() {
   const handleToggleActive = async (product: ProductWithRelations) => {
     setTogglingId(product.id);
     const nextStatus = product.status === "active" ? "inactive" : "active";
+
+    if (product.featured && nextStatus !== "active") {
+      setListError("Remove this product from New Arrivals before making it inactive.");
+      setTogglingId(null);
+      return;
+    }
 
     setProducts((prev) =>
       prev.map((p) => (p.id === product.id ? { ...p, status: nextStatus } : p))
@@ -178,12 +214,14 @@ function ProductsContent() {
   const openAddModal = () => {
     setEditingProduct(null);
     setFormError(null);
+    setNewArrivalUploadProgress(null);
     setModalMode("add");
   };
 
   const openEditModal = (product: ProductWithRelations) => {
     setEditingProduct(product);
     setFormError(null);
+    setNewArrivalUploadProgress(null);
     setModalMode("edit");
   };
 
@@ -192,11 +230,55 @@ function ProductsContent() {
     setModalMode(null);
     setEditingProduct(null);
     setFormError(null);
+    setNewArrivalUploadProgress(null);
   };
 
   const handleFormSubmit = async (values: ProductFormValues) => {
+    const isNewArrival = values.featured && !editingProduct?.featured;
+    if (isNewArrival && newArrivalCount >= NEW_ARRIVAL_LIMIT) {
+      setFormError(NEW_ARRIVAL_LIMIT_MESSAGE);
+      return;
+    }
+    if (
+      values.featured &&
+      !values.newArrivalThumbnail.imageUrl &&
+      !values.newArrivalThumbnail.file
+    ) {
+      setFormError(NEW_ARRIVAL_THUMBNAIL_REQUIRED_MESSAGE);
+      return;
+    }
+    if (values.featured && values.status !== "active") {
+      setFormError(NEW_ARRIVAL_ACTIVE_REQUIRED_MESSAGE);
+      return;
+    }
+
     setFormSubmitting(true);
     setFormError(null);
+    setNewArrivalUploadProgress(null);
+
+    const productId = editingProduct?.id ?? values.images.productId;
+    let newArrivalImageUrl = values.newArrivalThumbnail.imageUrl;
+    let uploadedNewArrivalPath: string | null = null;
+
+    if (values.newArrivalThumbnail.file) {
+      try {
+        setNewArrivalUploadProgress(0);
+        const uploaded = await uploadNewArrivalImage(
+          productId,
+          values.newArrivalThumbnail.file,
+          setNewArrivalUploadProgress
+        ).promise;
+        uploadedNewArrivalPath = uploaded.path;
+        newArrivalImageUrl = uploaded.publicUrl;
+      } catch (error) {
+        setFormError(
+          error instanceof Error ? error.message : "New Arrival thumbnail upload failed."
+        );
+        setFormSubmitting(false);
+        setNewArrivalUploadProgress(null);
+        return;
+      }
+    }
 
     const basePayload = {
       name: values.name.trim(),
@@ -211,6 +293,7 @@ function ProductsContent() {
       short_description: values.shortDescription.trim() || null,
       description: values.description.trim() || null,
       featured: values.featured,
+      new_arrival_image_url: newArrivalImageUrl,
       status: values.status,
       shopee_url: values.shopeeUrl.trim() || null,
       tokopedia_url: values.tokopediaUrl.trim() || null,
@@ -224,12 +307,29 @@ function ProductsContent() {
         ? await updateProduct(editingProduct.id, basePayload)
         : // Add mode: ImageUploader already uploaded to Storage under this id,
           // so the product row must be created with the same id.
-          await createProduct({ ...basePayload, id: values.images.productId });
+          await createProduct({ ...basePayload, id: productId });
 
     if (result.error || !result.data) {
+      if (uploadedNewArrivalPath) {
+        await deleteStorageImage(uploadedNewArrivalPath, PRODUCT_IMAGE_BUCKET);
+      }
       setFormError(result.error ?? "Something went wrong. Please try again.");
       setFormSubmitting(false);
+      setNewArrivalUploadProgress(null);
       return;
+    }
+
+    if (
+      editingProduct?.new_arrival_image_url &&
+      editingProduct.new_arrival_image_url !== newArrivalImageUrl
+    ) {
+      const previousNewArrivalPath = getImagePathFromPublicUrl(
+        editingProduct.new_arrival_image_url,
+        PRODUCT_IMAGE_BUCKET
+      );
+      if (previousNewArrivalPath) {
+        await deleteStorageImage(previousNewArrivalPath, PRODUCT_IMAGE_BUCKET);
+      }
     }
 
     // Product row saved — now reconcile the product_images row to match
@@ -237,14 +337,15 @@ function ProductsContent() {
     // The product fields already saved successfully at this point, so on an
     // image-step failure we keep the modal open (with the product's other
     // changes intact) instead of discarding that save.
-    const productId = result.data.id;
-    const imageResult = await syncProductImages(productId, values.images);
+    const savedProductId = result.data.id;
+    const imageResult = await syncProductImages(savedProductId, values.images);
 
     if (imageResult.error) {
       setModalMode("edit");
       setEditingProduct(result.data);
       setFormError(imageResult.error);
       setFormSubmitting(false);
+      setNewArrivalUploadProgress(null);
       await loadProducts();
       return;
     }
@@ -256,6 +357,7 @@ function ProductsContent() {
     });
 
     setFormSubmitting(false);
+    setNewArrivalUploadProgress(null);
     setModalMode(null);
     setEditingProduct(null);
     await loadProducts();
@@ -283,6 +385,13 @@ function ProductsContent() {
     const storagePaths = (deletingProduct.product_images ?? [])
       .map((image) => getImagePathFromPublicUrl(image.image_url))
       .filter((path): path is string => Boolean(path));
+    const newArrivalPath = deletingProduct.new_arrival_image_url
+      ? getImagePathFromPublicUrl(
+          deletingProduct.new_arrival_image_url,
+          PRODUCT_IMAGE_BUCKET
+        )
+      : null;
+    if (newArrivalPath) storagePaths.push(newArrivalPath);
 
     const { error } = await deleteProduct(deletingProduct.id);
 
@@ -325,6 +434,23 @@ function ProductsContent() {
             </div>
           )}
 
+          <div
+            className={`${styles.newArrivalNotice} ${
+              newArrivalCount >= NEW_ARRIVAL_LIMIT ? styles.newArrivalNoticeFull : ""
+            }`}
+            role={newArrivalCount >= NEW_ARRIVAL_LIMIT ? "alert" : "status"}
+          >
+            <i className="ri-star-line" aria-hidden="true" />
+            <span>
+              <strong>New Arrivals: {newArrivalCount} of {NEW_ARRIVAL_LIMIT} selected.</strong>{" "}
+              {newArrivalCount >= NEW_ARRIVAL_LIMIT
+                ? "The limit is full. Remove one before selecting another product."
+                : `Select ${NEW_ARRIVAL_LIMIT - newArrivalCount} more product${
+                    NEW_ARRIVAL_LIMIT - newArrivalCount === 1 ? "" : "s"
+                  } for the homepage. Each selected product needs a custom thumbnail.`}
+            </span>
+          </div>
+
           <ProductFilters
             search={searchInput}
             onSearchChange={setSearchInput}
@@ -345,6 +471,8 @@ function ProductsContent() {
             products={products}
             loading={loading}
             togglingId={togglingId}
+            newArrivalCount={newArrivalCount}
+            newArrivalLimit={NEW_ARRIVAL_LIMIT}
             onEdit={openEditModal}
             onDelete={openDeleteDialog}
             onToggleFeatured={handleToggleFeatured}
@@ -370,6 +498,10 @@ function ProductsContent() {
             initialProduct={editingProduct}
             submitting={formSubmitting}
             serverError={formError}
+            newArrivalLimitReached={
+              newArrivalCount >= NEW_ARRIVAL_LIMIT && !editingProduct?.featured
+            }
+            newArrivalUploadProgress={newArrivalUploadProgress}
             onSubmit={handleFormSubmit}
             onCancel={closeModal}
           />

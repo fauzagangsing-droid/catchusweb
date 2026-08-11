@@ -389,6 +389,7 @@ export type Product = {
   weight: number;
   status: ProductStatus;
   featured: boolean;
+  new_arrival_image_url: string | null;
   shopee_url: string | null;
   tiktok_url: string | null;
   tiktok_shop_url: string | null;
@@ -440,6 +441,7 @@ export type ProductInsert = {
   weight: number;
   status?: ProductStatus;
   featured?: boolean;
+  new_arrival_image_url?: string | null;
   shopee_url?: string | null;
   tiktok_url?: string | null;
   tiktok_shop_url?: string | null;
