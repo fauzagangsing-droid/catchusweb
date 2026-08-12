@@ -16,12 +16,13 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export async function generateMetadata(): Promise<Metadata> {
   const result = await getWebsiteSettings();
   const settings = result.data ?? DEFAULT_WEBSITE_SETTINGS;
+  const faviconUrl = settings.favicon_url || DEFAULT_WEBSITE_SETTINGS.favicon_url;
   return {
     metadataBase: new URL(getSiteUrl()),
     title: settings.website_title,
     description: settings.website_description,
     applicationName: settings.brand_name,
-    icons: settings.favicon_url ? { icon: settings.favicon_url } : undefined,
+    icons: faviconUrl ? { icon: faviconUrl } : undefined,
   };
 }
 

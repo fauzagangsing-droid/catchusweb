@@ -212,6 +212,17 @@ export function uploadCampaignImage(
   return uploadImage(BANNER_IMAGE_BUCKET, `campaigns/${campaignId}/${kind}`, file, onProgress);
 }
 
+/**
+ * Stores the site favicon in its own namespace inside the existing public,
+ * admin-protected banner media bucket.
+ */
+export function uploadWebsiteFavicon(
+  file: File,
+  onProgress: (percent: number) => void
+): CancellableUpload {
+  return uploadImage(BANNER_IMAGE_BUCKET, "website-settings/favicon", file, onProgress);
+}
+
 /** Uploads a banner video to the existing protected campaign media bucket. */
 export function uploadBannerVideo(
   bannerId: string,

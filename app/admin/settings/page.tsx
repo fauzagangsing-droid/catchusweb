@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import RequireAdminAuth from "@/components/admin/RequireAdminAuth";
 import Sidebar from "@/components/admin/Sidebar";
 import Topbar from "@/components/admin/Topbar";
@@ -8,8 +8,18 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import {
   getWebsiteSettings,
   updateWebsiteSettings,
+  DEFAULT_WEBSITE_SETTINGS,
   type WebsiteSettingsResult,
 } from "@/lib/website-settings";
+import {
+  ALLOWED_IMAGE_MIME_TYPES,
+  BANNER_IMAGE_BUCKET,
+  MAX_IMAGE_SIZE_BYTES,
+  deleteStorageImage,
+  getImagePathFromPublicUrl,
+  uploadWebsiteFavicon,
+  validateImageFile,
+} from "@/lib/storage";
 import type { WebsiteSettings, WebsiteSettingsUpdate } from "@/types/database";
 import styles from "./settings.module.css";
 
@@ -101,12 +111,24 @@ function SettingsContent() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [faviconPreviewUrl, setFaviconPreviewUrl] = useState<string | null>(null);
+  const [savedFaviconUrl, setSavedFaviconUrl] = useState<string | null>(null);
+  const [faviconPreviewFailed, setFaviconPreviewFailed] = useState(false);
+  const [faviconUploadProgress, setFaviconUploadProgress] = useState(0);
+  const [faviconError, setFaviconError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     getWebsiteSettings(supabaseBrowser).then((result) => {
       if (!mounted) return;
-      if (result.data) setValues(toFormValues(result.data));
+      if (result.data) {
+        setValues(toFormValues(result.data));
+        setSavedFaviconUrl(result.data.favicon_url);
+        setFaviconPreviewUrl(
+          result.data.favicon_url || DEFAULT_WEBSITE_SETTINGS.favicon_url
+        );
+      }
       else setErrorMessage(friendlyError(result));
       setLoading(false);
     });
@@ -115,9 +137,46 @@ function SettingsContent() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (faviconPreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(faviconPreviewUrl);
+      }
+    };
+  }, [faviconPreviewUrl]);
+
   const setField = (field: keyof SettingsFormValues, value: string) => {
     setValues((current) => (current ? { ...current, [field]: value } : current));
     setErrors((current) => ({ ...current, [field]: undefined }));
+    setSuccessMessage(null);
+  };
+
+  const handleFaviconUrlChange = (value: string) => {
+    setFaviconFile(null);
+    setFaviconUploadProgress(0);
+    setFaviconError(null);
+    setFaviconPreviewFailed(false);
+    setFaviconPreviewUrl(value.trim() || DEFAULT_WEBSITE_SETTINGS.favicon_url);
+    setField("favicon_url", value);
+  };
+
+  const handleFaviconSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setFaviconError(validationError);
+      return;
+    }
+
+    setFaviconFile(file);
+    setFaviconPreviewUrl(URL.createObjectURL(file));
+    setFaviconPreviewFailed(false);
+    setFaviconUploadProgress(0);
+    setFaviconError(null);
+    setErrorMessage(null);
     setSuccessMessage(null);
   };
 
@@ -134,34 +193,80 @@ function SettingsContent() {
     setSuccessMessage(null);
 
     const optional = (value: string | null) => value?.trim() || null;
-    const payload: WebsiteSettingsUpdate = {
-      brand_name: values.brand_name.trim(),
-      website_title: values.website_title.trim(),
-      website_description: values.website_description.trim(),
-      logo_url: optional(values.logo_url),
-      favicon_url: optional(values.favicon_url),
-      hero_title: values.hero_title.trim(),
-      hero_subtitle: values.hero_subtitle.trim(),
-      hero_button_text: values.hero_button_text.trim(),
-      hero_button_url: values.hero_button_url.trim(),
-      whatsapp: optional(values.whatsapp),
-      email: optional(values.email),
-      instagram_url: optional(values.instagram_url),
-      tiktok_url: optional(values.tiktok_url),
-      facebook_url: optional(values.facebook_url),
-      shopee_url: optional(values.shopee_url),
-      tokopedia_url: optional(values.tokopedia_url),
-      tiktok_shop_url: optional(values.tiktok_shop_url),
-      copyright_text: values.copyright_text.trim(),
-    };
-    const result = await updateWebsiteSettings(supabaseBrowser, payload);
-    if (result.data) {
+    let uploadedFaviconPath: string | null = null;
+
+    try {
+      let faviconUrl = optional(values.favicon_url);
+      if (faviconFile) {
+        const uploaded = await uploadWebsiteFavicon(
+          faviconFile,
+          setFaviconUploadProgress
+        ).promise;
+        uploadedFaviconPath = uploaded.path;
+        faviconUrl = uploaded.publicUrl;
+      }
+
+      const payload: WebsiteSettingsUpdate = {
+        brand_name: values.brand_name.trim(),
+        website_title: values.website_title.trim(),
+        website_description: values.website_description.trim(),
+        logo_url: optional(values.logo_url),
+        favicon_url: faviconUrl,
+        hero_title: values.hero_title.trim(),
+        hero_subtitle: values.hero_subtitle.trim(),
+        hero_button_text: values.hero_button_text.trim(),
+        hero_button_url: values.hero_button_url.trim(),
+        whatsapp: optional(values.whatsapp),
+        email: optional(values.email),
+        instagram_url: optional(values.instagram_url),
+        tiktok_url: optional(values.tiktok_url),
+        facebook_url: optional(values.facebook_url),
+        shopee_url: optional(values.shopee_url),
+        tokopedia_url: optional(values.tokopedia_url),
+        tiktok_shop_url: optional(values.tiktok_shop_url),
+        copyright_text: values.copyright_text.trim(),
+      };
+      const result = await updateWebsiteSettings(supabaseBrowser, payload);
+
+      if (!result.data) {
+        if (uploadedFaviconPath) {
+          await deleteStorageImage(uploadedFaviconPath, BANNER_IMAGE_BUCKET);
+        }
+        setErrorMessage(friendlyError(result));
+        return;
+      }
+
+      const nextFaviconUrl = result.data.favicon_url;
+      if (savedFaviconUrl && savedFaviconUrl !== nextFaviconUrl) {
+        const previousPath = getImagePathFromPublicUrl(
+          savedFaviconUrl,
+          BANNER_IMAGE_BUCKET
+        );
+        if (previousPath) {
+          await deleteStorageImage(previousPath, BANNER_IMAGE_BUCKET);
+        }
+      }
+
       setValues(toFormValues(result.data));
+      setSavedFaviconUrl(nextFaviconUrl);
+      setFaviconPreviewUrl(
+        nextFaviconUrl || DEFAULT_WEBSITE_SETTINGS.favicon_url
+      );
+      setFaviconFile(null);
+      setFaviconUploadProgress(0);
+      setFaviconError(null);
       setSuccessMessage("Website settings saved successfully.");
-    } else {
-      setErrorMessage(friendlyError(result));
+    } catch (error: unknown) {
+      if (uploadedFaviconPath) {
+        await deleteStorageImage(uploadedFaviconPath, BANNER_IMAGE_BUCKET);
+      }
+      const detail = error instanceof Error ? error.message : "Please try again.";
+      const message = `Favicon upload failed. ${detail}`;
+      setFaviconError(message);
+      setErrorMessage(message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const field = (
@@ -208,8 +313,82 @@ function SettingsContent() {
                 <div className={styles.cardBody}>
                   <div className={styles.grid}>{field("brand_name", "Brand Name", "Catchus")}{field("website_title", "Website Title", "Catchus Official")}</div>
                   <div className={styles.field}><label htmlFor="setting-website_description">Website Description</label><textarea id="setting-website_description" rows={3} value={values.website_description} onChange={(event) => setField("website_description", event.target.value)} aria-invalid={Boolean(errors.website_description)} disabled={saving} />{errors.website_description && <span className={styles.fieldError}>{errors.website_description}</span>}</div>
-                  <div className={styles.grid}>{field("logo_url", "Logo URL", "https://... or /images/logo.png", "url")}{field("favicon_url", "Favicon URL", "/icons/logo.png", "url")}</div>
-                  <p className={styles.hint}>URL fields are upload-ready; use a public URL or an existing file from the public folder.</p>
+                  <div className={styles.grid}>
+                    {field("logo_url", "Logo URL", "https://... or /images/logo.png", "url")}
+                    <div className={styles.field}>
+                      <label htmlFor="setting-favicon_url">Favicon URL</label>
+                      <input
+                        id="setting-favicon_url"
+                        type="url"
+                        value={values.favicon_url ?? ""}
+                        onChange={(event) => handleFaviconUrlChange(event.target.value)}
+                        placeholder="/icons/logo.png"
+                        aria-invalid={Boolean(errors.favicon_url || faviconError)}
+                        disabled={saving}
+                      />
+                      {errors.favicon_url && (
+                        <span className={styles.fieldError}>{errors.favicon_url}</span>
+                      )}
+
+                      <div className={styles.faviconUpload}>
+                        <div className={styles.faviconPreview}>
+                          {faviconPreviewUrl && !faviconPreviewFailed ? (
+                            // A native image supports both local paths and admin-supplied remote URLs.
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={faviconPreviewUrl}
+                              alt="Current favicon preview"
+                              onError={() => setFaviconPreviewFailed(true)}
+                            />
+                          ) : (
+                            <i className="ri-image-line" aria-hidden="true" />
+                          )}
+                        </div>
+                        <div className={styles.faviconControls}>
+                          <label
+                            htmlFor="setting-favicon-upload"
+                            className={styles.uploadButton}
+                            aria-disabled={saving}
+                          >
+                            {faviconPreviewUrl ? "Replace Favicon" : "Upload Favicon"}
+                          </label>
+                          <input
+                            id="setting-favicon-upload"
+                            className={styles.hiddenFileInput}
+                            type="file"
+                            accept={ALLOWED_IMAGE_MIME_TYPES.join(",")}
+                            onChange={handleFaviconSelect}
+                            disabled={saving}
+                          />
+                          <span className={styles.uploadHint}>
+                            PNG, JPG, or WEBP. Maximum {Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)} MB.
+                          </span>
+                          {faviconFile && (
+                            <span className={styles.selectedFile}>{faviconFile.name}</span>
+                          )}
+                          {saving && faviconFile && (
+                            <div
+                              className={styles.uploadProgress}
+                              role="progressbar"
+                              aria-label="Favicon upload progress"
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-valuenow={faviconUploadProgress}
+                            >
+                              <span style={{ width: `${faviconUploadProgress}%` }} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {faviconPreviewFailed && (
+                        <span className={styles.fieldError}>The favicon preview could not be loaded.</span>
+                      )}
+                      {faviconError && (
+                        <span className={styles.fieldError}>{faviconError}</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className={styles.hint}>Use a public URL or upload a favicon. The Logo URL remains unchanged.</p>
                 </div>
               </section>
 
