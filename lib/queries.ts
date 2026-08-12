@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Banner, Category, ProductWithRelations } from "@/types/database";
+import type { Banner, Campaign, Category, ProductWithRelations } from "@/types/database";
 import {
   getWebsiteSettings as queryWebsiteSettings,
   type WebsiteSettingsResult,
@@ -112,6 +112,19 @@ export const getWebsiteSettings = cache(async (): Promise<WebsiteSettingsResult>
 export const getActiveBanners = cache(async (): Promise<QueryResult<Banner[]>> => {
   const { data, error } = await supabase
     .from("banners")
+    .select("*")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) return { data: null, error: error.message };
+  return { data: data ?? [], error: null };
+});
+
+/** Ordered editorial Campaign blocks shown after New Arrivals. */
+export const getActiveCampaigns = cache(async (): Promise<QueryResult<Campaign[]>> => {
+  const { data, error } = await supabase
+    .from("campaigns")
     .select("*")
     .eq("is_active", true)
     .order("display_order", { ascending: true })

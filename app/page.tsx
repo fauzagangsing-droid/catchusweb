@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import BestSeller from "@/components/BestSeller";
+import CampaignSection from "@/components/CampaignSection";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import {
   getActiveBanners,
+  getActiveCampaigns,
   getBestSellerProducts,
   getCategories,
   getWebsiteSettings,
@@ -39,10 +41,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [settingsResult, bannersResult, bestSellersResult] = await Promise.all([
+  const [settingsResult, bannersResult, bestSellersResult, campaignsResult] = await Promise.all([
     getWebsiteSettings(),
     getActiveBanners(),
     getBestSellerProducts(),
+    getActiveCampaigns(),
   ]);
   const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
 
@@ -58,6 +61,7 @@ export default async function Home() {
         buttonUrl={settings.hero_button_url}
       />
       <BestSeller products={bestSellersResult.data ?? []} />
+      <CampaignSection campaigns={campaignsResult.data ?? []} />
       <Footer settings={settings} />
     </>
   );

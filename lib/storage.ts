@@ -198,6 +198,20 @@ export function uploadBannerImage(
   return uploadImage(BANNER_IMAGE_BUCKET, bannerId, file, onProgress);
 }
 
+/**
+ * Stores editorial Campaign artwork in its own namespace inside the existing
+ * banner media bucket. Campaign files remain independent from Hero media and
+ * product images while reusing the established authenticated upload flow.
+ */
+export function uploadCampaignImage(
+  campaignId: string,
+  kind: "desktop" | "mobile",
+  file: File,
+  onProgress: (percent: number) => void
+): CancellableUpload {
+  return uploadImage(BANNER_IMAGE_BUCKET, `campaigns/${campaignId}/${kind}`, file, onProgress);
+}
+
 /** Uploads a banner video to the existing protected campaign media bucket. */
 export function uploadBannerVideo(
   bannerId: string,

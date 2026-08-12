@@ -11,10 +11,12 @@ import { MAX_IMAGE_SIZE_BYTES } from "@/lib/storage";
 import styles from "./BannerImageCropper.module.css";
 
 export type BannerCropKind = "desktop" | "mobile";
+export type ImageCropPreset = "banner" | "campaign";
 
 interface BannerImageCropperProps {
   file: File;
   kind: BannerCropKind;
+  preset?: ImageCropPreset;
   sourceUrl: string;
   onCancel: () => void;
   onConfirm: (file: File) => void;
@@ -39,21 +41,45 @@ interface CropBox {
 }
 
 const CROP_CONFIG = {
-  desktop: {
-    label: "Desktop banner",
-    ratioLabel: "16:7",
-    aspectRatio: 16 / 7,
-    outputWidth: 1920,
-    previewWidth: 640,
+  banner: {
+    desktop: {
+      label: "Desktop banner",
+      ratioLabel: "16:7",
+      aspectRatio: 16 / 7,
+      outputWidth: 1920,
+      minimumOutputWidth: 960,
+      previewWidth: 640,
+    },
+    mobile: {
+      label: "Mobile banner",
+      ratioLabel: "2:3",
+      aspectRatio: 2 / 3,
+      outputWidth: 1080,
+      minimumOutputWidth: 540,
+      previewWidth: 320,
+    },
   },
-  mobile: {
-    label: "Mobile banner",
-    ratioLabel: "2:3",
-    aspectRatio: 2 / 3,
-    outputWidth: 1080,
-    previewWidth: 320,
+  campaign: {
+    desktop: {
+      label: "Desktop Campaign",
+      ratioLabel: "16:9",
+      aspectRatio: 16 / 9,
+      outputWidth: 2560,
+      minimumOutputWidth: 1280,
+      previewWidth: 640,
+    },
+    mobile: {
+      label: "Mobile Campaign",
+      ratioLabel: "4:5",
+      aspectRatio: 4 / 5,
+      outputWidth: 1440,
+      minimumOutputWidth: 720,
+      previewWidth: 320,
+    },
   },
 } as const;
+
+type CropConfig = (typeof CROP_CONFIG)[ImageCropPreset][BannerCropKind];
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -135,9 +161,9 @@ async function createCroppedFile(
   source: HTMLImageElement,
   originalFile: File,
   crop: CropBox,
-  kind: BannerCropKind
+  kind: BannerCropKind,
+  config: CropConfig
 ): Promise<File> {
-  const config = CROP_CONFIG[kind];
   let outputWidth = Math.max(1, Math.min(config.outputWidth, Math.floor(crop.sw)));
   let quality = 0.94;
   let blob: Blob | null = null;
@@ -164,7 +190,7 @@ async function createCroppedFile(
     );
     blob = await canvasToBlob(canvas, originalFile.type, quality);
     if (blob.size <= MAX_IMAGE_SIZE_BYTES) break;
-    outputWidth = Math.max(kind === "desktop" ? 960 : 540, Math.round(outputWidth * 0.88));
+    outputWidth = Math.max(config.minimumOutputWidth, Math.round(outputWidth * 0.88));
     if (originalFile.type !== "image/png") quality = Math.max(0.78, quality - 0.04);
   }
 
@@ -187,11 +213,13 @@ async function createCroppedFile(
 export default function BannerImageCropper({
   file,
   kind,
+  preset = "banner",
   sourceUrl,
   onCancel,
   onConfirm,
 }: BannerImageCropperProps) {
-  const config = CROP_CONFIG[kind];
+  const config = CROP_CONFIG[preset][kind];
+  const titleId = `${preset}-${kind}-crop-title`;
   const imageRef = useRef<HTMLImageElement>(null);
   const cropAreaRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
@@ -301,7 +329,7 @@ export default function BannerImageCropper({
     setSaving(true);
     setError(null);
     try {
-      const croppedFile = await createCroppedFile(imageRef.current, file, crop, kind);
+      const croppedFile = await createCroppedFile(imageRef.current, file, crop, kind, config);
       onConfirm(croppedFile);
     } catch (cropError) {
       setError(cropError instanceof Error ? cropError.message : "The crop could not be saved.");
@@ -315,12 +343,12 @@ export default function BannerImageCropper({
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="banner-crop-title"
+        aria-labelledby={titleId}
       >
         <header className={styles.header}>
           <div>
             <span>{config.label} · {config.ratioLabel}</span>
-            <h2 id="banner-crop-title">Adjust image crop</h2>
+            <h2 id={titleId}>Adjust image crop</h2>
           </div>
           <button type="button" onClick={onCancel} disabled={saving} aria-label="Cancel crop">
             <i className="ri-close-line" aria-hidden="true" />
@@ -332,6 +360,7 @@ export default function BannerImageCropper({
             <div
               ref={cropAreaRef}
               className={`${styles.cropArea} ${kind === "mobile" ? styles.mobileCrop : styles.desktopCrop}`}
+              style={{ aspectRatio: config.aspectRatio }}
               onPointerDown={startDrag}
               onPointerMove={moveDrag}
               onPointerUp={endDrag}
@@ -343,7 +372,7 @@ export default function BannerImageCropper({
               <img
                 ref={imageRef}
                 src={sourceUrl}
-                alt="Original banner crop"
+                alt={`Original ${config.label} crop`}
                 style={imageStyle}
                 draggable={false}
                 onLoad={(event) => {
@@ -358,9 +387,9 @@ export default function BannerImageCropper({
             </div>
 
             <div className={styles.zoomControl}>
-              <label htmlFor="banner-crop-zoom">Zoom</label>
+              <label htmlFor={`${preset}-${kind}-crop-zoom`}>Zoom</label>
               <input
-                id="banner-crop-zoom"
+                id={`${preset}-${kind}-crop-zoom`}
                 type="range"
                 min="1"
                 max="3"
@@ -377,7 +406,7 @@ export default function BannerImageCropper({
                   }
                 }}
               />
-              <output htmlFor="banner-crop-zoom">{Math.round(zoom * 100)}%</output>
+              <output htmlFor={`${preset}-${kind}-crop-zoom`}>{Math.round(zoom * 100)}%</output>
             </div>
             <p className={styles.instructions}>
               Drag to position the important subject inside the crop. Use zoom only when needed.
@@ -389,6 +418,7 @@ export default function BannerImageCropper({
             <canvas
               ref={previewRef}
               className={kind === "mobile" ? styles.mobilePreview : styles.desktopPreview}
+              style={{ aspectRatio: config.aspectRatio }}
               aria-label={`${config.label} final crop preview`}
             />
             <small>

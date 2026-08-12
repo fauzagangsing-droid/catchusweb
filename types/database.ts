@@ -375,6 +375,40 @@ export type BannerInsert = {
 
 export type BannerUpdate = Partial<BannerInsert>;
 
+export type Campaign = {
+  id: string;
+  label: string | null;
+  title: string;
+  description: string | null;
+  /** Legacy single-image field retained for existing Campaign rows. */
+  image_url: string | null;
+  desktop_image_url: string | null;
+  mobile_image_url: string | null;
+  button_text: string;
+  button_url: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CampaignInsert = {
+  id?: string;
+  label?: string | null;
+  title: string;
+  description?: string | null;
+  /** Legacy compatibility only; new writes use desktop/mobile image fields. */
+  image_url?: string | null;
+  desktop_image_url?: string | null;
+  mobile_image_url?: string | null;
+  button_text?: string;
+  button_url?: string;
+  is_active?: boolean;
+  display_order?: number;
+};
+
+export type CampaignUpdate = Partial<CampaignInsert>;
+
 /** Insert/update payloads for the Category Management module. */
 export type CategoryInsert = {
   name: string;
@@ -655,6 +689,12 @@ export interface Database {
         Row: Banner;
         Insert: BannerInsert;
         Update: BannerUpdate;
+        Relationships: [];
+      };
+      campaigns: {
+        Row: Campaign;
+        Insert: CampaignInsert;
+        Update: CampaignUpdate;
         Relationships: [];
       };
       products: {

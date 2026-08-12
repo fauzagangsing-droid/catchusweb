@@ -72,6 +72,11 @@ export default function DashboardContent({ stats, recentProducts }: DashboardCon
                 label="Upload Banner"
                 href="/admin/banners"
               />
+              <QuickAction
+                icon="ri-layout-masonry-line"
+                label="Manage Campaigns"
+                href="/admin/campaigns"
+              />
             </div>
           </section>
 
