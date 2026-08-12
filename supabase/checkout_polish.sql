@@ -248,6 +248,7 @@ begin
 end;
 $$;
 
-revoke all on function public.set_order_discord_message_id(uuid, text) from public, anon;
-grant execute on function public.set_order_discord_message_id(uuid, text) to authenticated;
-
+revoke all on function public.set_order_discord_message_id(uuid, text)
+  from public, anon, authenticated;
+grant execute on function public.set_order_discord_message_id(uuid, text)
+  to service_role;

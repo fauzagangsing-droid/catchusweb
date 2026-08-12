@@ -12,10 +12,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-interface AccountPageProps { searchParams: { verified?: string }; }
+interface AccountPageProps { searchParams: Promise<{ verified?: string }>; }
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const supabase = createCustomerServerClient();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createCustomerServerClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (!user || userError) redirect("/login?next=/account");
 
@@ -34,7 +35,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         email={email}
         initialFullName={profileResult.data?.full_name ?? (typeof user.user_metadata.full_name === "string" ? user.user_metadata.full_name : null)}
         initialAvatarUrl={profileResult.data?.avatar_url ?? null}
-        verified={searchParams.verified === "1"}
+        verified={resolvedSearchParams.verified === "1"}
       />
       <Footer settings={settings} />
     </div>

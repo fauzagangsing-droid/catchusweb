@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Catchus — Product Image Upload: Storage bucket + RLS
--- Paste directly into Supabase SQL Editor and run once. Safe to re-run.
+-- Run after customer_auth.sql. Safe to re-run.
 --
 -- Why this file exists:
 -- supabase/schema.sql already created the product_images TABLE (with a
@@ -8,8 +8,8 @@
 -- a public SELECT policy — no way for an admin to write a row. And no
 -- Storage bucket has been created yet to actually hold the image files.
 -- This file adds exactly those two things, following the same pattern as
--- supabase/admin_rls_policies.sql (trusting the `authenticated` role, since
--- this project has no server-side service-role key).
+-- supabase/admin_rls_policies.sql: browser sessions must also pass
+-- public.is_admin(); authentication alone never authorizes uploads.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -44,27 +44,27 @@ create policy "Public read product images"
   to anon, authenticated
   using (bucket_id = 'product-images');
 
--- Signed-in admins can upload new files into this bucket.
+-- Allow-listed admins can upload new files into this bucket.
 drop policy if exists "Authenticated upload product images" on storage.objects;
 create policy "Authenticated upload product images"
   on storage.objects for insert
   to authenticated
-  with check (bucket_id = 'product-images');
+  with check (bucket_id = 'product-images' and (select public.is_admin()));
 
 -- Signed-in admins can overwrite files in this bucket (x-upsert: true).
 drop policy if exists "Authenticated update product images" on storage.objects;
 create policy "Authenticated update product images"
   on storage.objects for update
   to authenticated
-  using (bucket_id = 'product-images')
-  with check (bucket_id = 'product-images');
+  using (bucket_id = 'product-images' and (select public.is_admin()))
+  with check (bucket_id = 'product-images' and (select public.is_admin()));
 
 -- Signed-in admins can delete files (replace old image / delete product).
 drop policy if exists "Authenticated delete product images" on storage.objects;
 create policy "Authenticated delete product images"
   on storage.objects for delete
   to authenticated
-  using (bucket_id = 'product-images');
+  using (bucket_id = 'product-images' and (select public.is_admin()));
 
 -- ----------------------------------------------------------------------------
 -- 3. product_images TABLE — write policies
@@ -77,22 +77,22 @@ drop policy if exists "Authenticated read all product images" on public.product_
 create policy "Authenticated read all product images"
   on public.product_images for select
   to authenticated
-  using (true);
+  using ((select public.is_admin()));
 
 create policy "Authenticated insert product images"
   on public.product_images for insert
   to authenticated
-  with check (true);
+  with check ((select public.is_admin()));
 
 drop policy if exists "Authenticated update product images" on public.product_images;
 create policy "Authenticated update product images"
   on public.product_images for update
   to authenticated
-  using (true)
-  with check (true);
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 
 drop policy if exists "Authenticated delete product images" on public.product_images;
 create policy "Authenticated delete product images"
   on public.product_images for delete
   to authenticated
-  using (true);
+  using ((select public.is_admin()));

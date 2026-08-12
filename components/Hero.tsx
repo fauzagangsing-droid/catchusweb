@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { safeNavigationHref } from "@/lib/safe-url";
 import type { Banner } from "@/types/database";
 
 interface HeroProps {
@@ -76,6 +77,7 @@ export default function Hero({ banners, title, subtitle, buttonText, buttonUrl }
       <div className="hero-stage">
         {campaigns.map((campaign, index) => {
           const desktopImage = campaign.desktop_image_url || campaign.mobile_image_url || "/images/catchus.PNG";
+          const campaignButtonUrl = safeNavigationHref(campaign.button_url);
           const isActive = index === activeIndex;
           const desktopVideoClass = campaign.mobile_video_url
             ? "hero-media-video hero-media-video-desktop"
@@ -132,8 +134,8 @@ export default function Hero({ banners, title, subtitle, buttonText, buttonUrl }
               <div className="hero-content">
                 <h1>{campaign.title}</h1>
                 {campaign.subtitle && <p>{campaign.subtitle}</p>}
-                {campaign.button_text && campaign.button_url && (
-                  <a href={campaign.button_url}>{campaign.button_text}<i className="ri-arrow-right-line" aria-hidden="true" /></a>
+                {campaign.button_text && campaignButtonUrl && (
+                  <a href={campaignButtonUrl}>{campaign.button_text}<i className="ri-arrow-right-line" aria-hidden="true" /></a>
                 )}
               </div>
             </article>

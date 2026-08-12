@@ -5,12 +5,13 @@ import { safeNextPath } from "@/lib/customer-auth";
 export const metadata: Metadata = { title: "Customer Login" };
 
 interface LoginPageProps {
-  searchParams: { next?: string; error?: string };
+  searchParams: Promise<{ next?: string; error?: string }>;
 }
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
-  const initialError = searchParams.error
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const initialError = resolvedSearchParams.error
     ? "Your authentication link is invalid or has expired. Please try again."
     : null;
-  return <LoginForm nextPath={safeNextPath(searchParams.next ?? null)} initialError={initialError} />;
+  return <LoginForm nextPath={safeNextPath(resolvedSearchParams.next ?? null)} initialError={initialError} />;
 }

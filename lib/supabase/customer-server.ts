@@ -12,11 +12,11 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export function createCustomerServerClient() {
+export async function createCustomerServerClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing public Supabase environment variables.");
   }
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionOnly = cookieStore.get(SESSION_ONLY_COOKIE)?.value === "1";
 
   return createServerClient<Database, "public">(supabaseUrl, supabaseAnonKey, {

@@ -54,6 +54,20 @@ export default function AdminLoginForm() {
 
       // Success — keep the button in its loading state while we navigate
       // away so there's no flash of an idle "Sign In" button.
+      const { data: isAdmin, error: adminError } = await supabaseBrowser.rpc(
+        "is_admin"
+      );
+      if (adminError || isAdmin !== true) {
+        await supabaseBrowser.auth.signOut();
+        setError(
+          adminError
+            ? "Admin access could not be verified. Please try again."
+            : "This account does not have admin access."
+        );
+        setIsLoading(false);
+        return;
+      }
+
       router.replace("/admin/dashboard");
     } catch {
       setError("Couldn't reach the server. Please check your connection and try again.");

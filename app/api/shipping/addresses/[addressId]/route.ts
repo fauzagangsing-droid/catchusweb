@@ -4,14 +4,15 @@ import { normalizeShippingAddress } from "@/lib/shipping-addresses";
 import { createCustomerServerClient } from "@/lib/supabase/customer-server";
 
 interface AddressRouteContext {
-  params: { addressId: string };
+  params: Promise<{ addressId: string }>;
 }
 
 export async function PATCH(request: NextRequest, { params }: AddressRouteContext) {
+  const { addressId } = await params;
   if (request.headers.get("origin") !== request.nextUrl.origin) {
     return NextResponse.json({ error: "Permintaan alamat tidak valid." }, { status: 403 });
   }
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Silakan masuk kembali." }, { status: 401 });
 
@@ -21,7 +22,8 @@ export async function PATCH(request: NextRequest, { params }: AddressRouteContex
     const { data, error } = await supabase
       .from("shipping_addresses")
       .update(updates)
-      .eq("id", params.addressId)
+      .eq("id", addressId)
+      .eq("user_id", user.id)
       .select("*")
       .single();
     if (error || !data) throw new Error(error?.message);
@@ -34,14 +36,19 @@ export async function PATCH(request: NextRequest, { params }: AddressRouteContex
 }
 
 export async function DELETE(request: NextRequest, { params }: AddressRouteContext) {
+  const { addressId } = await params;
   if (request.headers.get("origin") !== request.nextUrl.origin) {
     return NextResponse.json({ error: "Permintaan alamat tidak valid." }, { status: 403 });
   }
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Silakan masuk kembali." }, { status: 401 });
 
-  const { error } = await supabase.from("shipping_addresses").delete().eq("id", params.addressId);
+  const { error } = await supabase
+    .from("shipping_addresses")
+    .delete()
+    .eq("id", addressId)
+    .eq("user_id", user.id);
   if (error) {
     return NextResponse.json({ error: "Alamat tidak dapat dihapus." }, { status: 400 });
   }

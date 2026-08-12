@@ -15,9 +15,15 @@ export default function RedirectIfAuthenticated() {
   useEffect(() => {
     let isMounted = true;
 
-    supabaseBrowser.auth.getSession().then(({ data }) => {
-      if (isMounted && data.session) {
+    supabaseBrowser.auth.getSession().then(async ({ data }) => {
+      if (!isMounted || !data.session) return;
+
+      const { data: isAdmin, error } = await supabaseBrowser.rpc("is_admin");
+      if (!isMounted) return;
+      if (!error && isAdmin === true) {
         router.replace("/admin/dashboard");
+      } else if (!error) {
+        await supabaseBrowser.auth.signOut();
       }
     });
 

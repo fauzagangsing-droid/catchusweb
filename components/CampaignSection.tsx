@@ -1,12 +1,12 @@
 import type { Campaign } from "@/types/database";
+import {
+  isExternalNavigationHref,
+  safeNavigationHref,
+} from "@/lib/safe-url";
 import styles from "./CampaignSection.module.css";
 
 interface CampaignSectionProps {
   campaigns: Campaign[];
-}
-
-function isExternalUrl(url: string): boolean {
-  return /^https?:\/\//i.test(url);
 }
 
 export default function CampaignSection({ campaigns }: CampaignSectionProps) {
@@ -18,6 +18,7 @@ export default function CampaignSection({ campaigns }: CampaignSectionProps) {
         {campaigns.map((campaign) => {
           const desktopImage = campaign.desktop_image_url ?? campaign.image_url;
           const mobileImage = campaign.mobile_image_url;
+          const campaignButtonUrl = safeNavigationHref(campaign.button_url);
 
           return (
             <article className={styles.campaign} key={campaign.id}>
@@ -48,15 +49,17 @@ export default function CampaignSection({ campaigns }: CampaignSectionProps) {
                 {campaign.label && <span className={styles.label}>{campaign.label}</span>}
                 <h2>{campaign.title}</h2>
                 {campaign.description && <p>{campaign.description}</p>}
-                <a
-                  href={campaign.button_url}
-                  {...(isExternalUrl(campaign.button_url)
-                    ? { target: "_blank", rel: "noopener noreferrer" }
-                    : {})}
-                >
-                  {campaign.button_text}
-                  <i className="ri-arrow-right-line" aria-hidden="true" />
-                </a>
+                {campaignButtonUrl && (
+                  <a
+                    href={campaignButtonUrl}
+                    {...(isExternalNavigationHref(campaignButtonUrl)
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
+                  >
+                    {campaign.button_text}
+                    <i className="ri-arrow-right-line" aria-hidden="true" />
+                  </a>
+                )}
               </div>
             </article>
           );

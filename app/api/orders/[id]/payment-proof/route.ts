@@ -4,29 +4,27 @@ import {
   createOrderDiscordNotification,
   updateOrderDiscordNotification,
 } from "@/lib/discord";
+import { detectImageFileMime, imageExtension } from "@/lib/image-signature";
 import { createCustomerServerClient } from "@/lib/supabase/customer-server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 interface PaymentProofContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(_: NextRequest, { params }: PaymentProofContext) {
-  const supabase = createCustomerServerClient();
+  const { id } = await params;
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Silakan masuk kembali." }, { status: 401 });
 
   const { data: order } = await supabase
     .from("orders")
     .select("id, payment_proof_url")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
   if (!order) return NextResponse.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
@@ -41,11 +39,12 @@ export async function GET(_: NextRequest, { params }: PaymentProofContext) {
 }
 
 export async function POST(request: NextRequest, { params }: PaymentProofContext) {
+  const { id } = await params;
   if (request.headers.get("origin") !== request.nextUrl.origin) {
     return NextResponse.json({ error: "Permintaan upload tidak valid." }, { status: 403 });
   }
 
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (!user || userError) {
     return NextResponse.json({ error: "Sesi Anda telah berakhir." }, { status: 401 });
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest, { params }: PaymentProofContext
   const { data: order } = await supabase
     .from("orders")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
   if (!order) return NextResponse.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
@@ -80,8 +79,7 @@ export async function POST(request: NextRequest, { params }: PaymentProofContext
   if (!(proof instanceof File)) {
     return NextResponse.json({ error: "Pilih gambar bukti pembayaran." }, { status: 400 });
   }
-  const extension = ALLOWED_TYPES[proof.type];
-  if (!extension) {
+  if (!ALLOWED_TYPES.has(proof.type)) {
     return NextResponse.json({ error: "Format harus JPG, JPEG, PNG, atau WEBP." }, { status: 400 });
   }
   if (proof.size <= 0 || proof.size > MAX_FILE_SIZE) {
@@ -91,8 +89,16 @@ export async function POST(request: NextRequest, { params }: PaymentProofContext
     return NextResponse.json({ error: "Catatan maksimal 500 karakter." }, { status: 400 });
   }
 
+  const detectedMime = await detectImageFileMime(proof);
+  if (!detectedMime || detectedMime !== proof.type) {
+    return NextResponse.json(
+      { error: "Isi file tidak sesuai dengan format gambar yang dipilih." },
+      { status: 400 }
+    );
+  }
+
   const service = createServiceRoleClient();
-  const objectPath = `${user.id}/${order.id}/${randomUUID()}.${extension}`;
+  const objectPath = `${user.id}/${order.id}/${randomUUID()}.${imageExtension(detectedMime)}`;
   const { error: uploadError } = await service.storage
     .from("payment-proofs")
     .upload(objectPath, proof, { contentType: proof.type, upsert: false });

@@ -87,8 +87,6 @@ grant select on public.vouchers to authenticated;
 grant select on public.voucher_usages to authenticated;
 
 drop policy if exists "Customers read active vouchers" on public.vouchers;
-create policy "Customers read active vouchers" on public.vouchers
-  for select to authenticated using (is_active or public.is_admin());
 drop policy if exists "Admins manage vouchers" on public.vouchers;
 create policy "Admins manage vouchers" on public.vouchers
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
@@ -115,43 +113,16 @@ create index if not exists product_reviews_product_idx
   on public.product_reviews(product_id, created_at desc);
 
 alter table public.product_reviews enable row level security;
-grant select on public.product_reviews to anon, authenticated;
-grant insert, update, delete on public.product_reviews to authenticated;
+revoke all on public.product_reviews from anon, authenticated;
 
 drop policy if exists "Public read product reviews" on public.product_reviews;
-create policy "Public read product reviews" on public.product_reviews
-  for select to anon, authenticated using (true);
 drop policy if exists "Verified buyers create reviews" on public.product_reviews;
-create policy "Verified buyers create reviews" on public.product_reviews
-  for insert to authenticated with check (
-    (select auth.uid()) = user_id
-    and exists (
-      select 1 from public.orders
-      join public.order_items on order_items.order_id = orders.id
-      where orders.id = product_reviews.order_id
-        and orders.user_id = (select auth.uid())
-        and orders.payment_status = 'paid'
-        and order_items.product_id = product_reviews.product_id
-    )
-  );
 drop policy if exists "Customers update own reviews" on public.product_reviews;
-create policy "Customers update own reviews" on public.product_reviews
-  for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check (
-    (select auth.uid()) = user_id
-    and exists (
-      select 1 from public.orders
-      join public.order_items on order_items.order_id = orders.id
-      where orders.id = product_reviews.order_id
-        and orders.user_id = (select auth.uid())
-        and orders.payment_status = 'paid'
-        and order_items.product_id = product_reviews.product_id
-    )
-  );
 drop policy if exists "Customers delete own reviews" on public.product_reviews;
-create policy "Customers delete own reviews" on public.product_reviews
-  for delete to authenticated using ((select auth.uid()) = user_id);
+
+-- Public review reads and verified-buyer mutations go through the application
+-- API, which returns only public fields and performs ownership checks before
+-- using the server-only service role.
 
 drop trigger if exists trg_product_reviews_updated_at on public.product_reviews;
 create trigger trg_product_reviews_updated_at before update on public.product_reviews

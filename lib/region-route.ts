@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { ApicoError, getRegions } from "@/lib/apico";
+import { createCustomerServerClient } from "@/lib/supabase/customer-server";
 import type { RegionLevel } from "@/types/shipping";
 
 const CODE_PATTERNS: Partial<Record<RegionLevel, RegExp>> = {
@@ -21,6 +22,15 @@ export async function createRegionResponse(
   level: RegionLevel,
   parentCode?: string
 ) {
+  const supabase = await createCustomerServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { success: false, data: [], regions: [], error: "Silakan masuk kembali." },
+      { status: 401 }
+    );
+  }
+
   const normalizedParentCode = parentCode?.trim();
   const pattern = CODE_PATTERNS[level];
   if (pattern && (!normalizedParentCode || !pattern.test(normalizedParentCode))) {
@@ -33,7 +43,7 @@ export async function createRegionResponse(
       { success: true, data: regions, regions },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+          "Cache-Control": "private, max-age=300, stale-while-revalidate=86400",
         },
       }
     );

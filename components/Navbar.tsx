@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMobileMenu } from "@/hooks/useMobileMenu";
 import ProductSearch from "@/components/ProductSearch";
 import CustomerAuthNav from "@/components/auth/CustomerAuthNav";
@@ -30,13 +31,13 @@ export default function Navbar({ brandName, logoUrl }: NavbarProps) {
           <ProductSearch />
           <ul className={`menu${menuActive ? " menu-active" : ""}`}>
             <li>
-              <a href="/#beranda">Beranda</a>
+              <Link href="/#beranda">Beranda</Link>
             </li>
             <li>
-              <a href="/shop">Shop</a>
+              <Link href="/shop">Shop</Link>
             </li>
             <li>
-              <a href="/#kontak">Kontak</a>
+              <Link href="/#kontak">Kontak</Link>
             </li>
             <li className="cart-nav-item">
               <CartBadge />

@@ -61,7 +61,7 @@ type FormErrors = Partial<Record<
 >>;
 
 function isAllowedButtonUrl(value: string): boolean {
-  return /^(https?:\/\/|\/|#)/i.test(value);
+  return /^(https?:\/\/|\/(?!\/)|#)/i.test(value);
 }
 
 export default function BannerForm({

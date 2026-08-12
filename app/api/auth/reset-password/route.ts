@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (!user || userError) {
     return NextResponse.json(

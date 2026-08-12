@@ -7,7 +7,7 @@ import type { AdminOrderAction } from "@/types/order";
 import type { ShippingStatus } from "@/types/database";
 
 interface AdminOrderRouteContext {
-  params: { orderId: string };
+  params: Promise<{ orderId: string }>;
 }
 
 const ACTIONS: AdminOrderAction[] = [
@@ -23,9 +23,10 @@ function isAdminOrderAction(value: unknown): value is AdminOrderAction {
 }
 
 export async function GET(request: NextRequest, { params }: AdminOrderRouteContext) {
+  const { orderId } = await params;
   const supabase = await getAdminRequestClient(request);
   if (!supabase) return NextResponse.json({ error: "Akses admin diperlukan." }, { status: 401 });
-  const { data: order } = await supabase.from("orders").select("id, payment_proof_url").eq("id", params.orderId).maybeSingle();
+  const { data: order } = await supabase.from("orders").select("id, payment_proof_url").eq("id", orderId).maybeSingle();
   if (!order) return NextResponse.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
   if (!order.payment_proof_url) return NextResponse.json({ url: null });
   const service = createServiceRoleClient();
@@ -38,6 +39,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: AdminOrderRouteContext
 ) {
+  const { orderId } = await params;
   if (request.headers.get("origin") !== request.nextUrl.origin) {
     return NextResponse.json({ error: "Permintaan admin tidak valid." }, { status: 403 });
   }
@@ -80,7 +82,7 @@ export async function PATCH(
     const { data: order, error } = await supabase.rpc(
       "admin_save_order_shipping",
       {
-        p_order_id: params.orderId,
+        p_order_id: orderId,
         p_tracking_number: trackingNumber.trim() || null,
         p_shipping_status: shippingStatus as ShippingStatus,
       }
@@ -102,7 +104,7 @@ export async function PATCH(
   }
 
   const { data: order, error } = await supabase.rpc("admin_update_order", {
-      p_order_id: params.orderId,
+      p_order_id: orderId,
       p_action: action,
       p_rejection_reason:
         typeof payload?.rejectionReason === "string"

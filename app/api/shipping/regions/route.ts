@@ -6,7 +6,7 @@ import type { RegionLevel } from "@/types/shipping";
 const LEVELS: RegionLevel[] = ["province", "city", "district", "village"];
 
 export async function GET(request: NextRequest) {
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Silakan masuk kembali." }, { status: 401 });

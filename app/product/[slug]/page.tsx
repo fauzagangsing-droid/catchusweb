@@ -9,6 +9,7 @@ import AddToCartButton from "@/components/cart/AddToCartButton";
 import ProductReviews from "@/components/reviews/ProductReviews";
 import { formatRupiah } from "@/lib/adapters";
 import { getProductBySlug, getRelatedProducts, getWebsiteSettings } from "@/lib/queries";
+import { safeNavigationHref } from "@/lib/safe-url";
 import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
@@ -21,12 +22,13 @@ import styles from "./product-detail.module.css";
 export const dynamic = "force-dynamic";
 
 interface ProductDetailPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
   const [productResult, settingsResult] = await Promise.all([
-    getProductBySlug(params.slug),
+    getProductBySlug(slug),
     getWebsiteSettings(),
   ]);
   const product = productResult.data;
@@ -61,8 +63,9 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const { slug } = await params;
   const [productResult, settingsResult] = await Promise.all([
-    getProductBySlug(params.slug),
+    getProductBySlug(slug),
     getWebsiteSettings(),
   ]);
   const { data: product, error } = productResult;
@@ -83,7 +86,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     { name: "Blibli", url: product.blibli_url, icon: "ri-shopping-bag-line" },
   ].flatMap((marketplace) => {
     const url = marketplace.url?.trim();
-    return url ? [{ ...marketplace, url }] : [];
+    const safeUrl = safeNavigationHref(url);
+    return safeUrl ? [{ ...marketplace, url: safeUrl }] : [];
   });
 
   const productJsonLd = buildProductJsonLd(product, settings);

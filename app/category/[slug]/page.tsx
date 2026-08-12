@@ -16,12 +16,13 @@ import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 export const dynamic = "force-dynamic";
 
 interface CategoryPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params;
   const [categoryResult, settingsResult] = await Promise.all([
-    getCategoryBySlug(params.slug),
+    getCategoryBySlug(slug),
     getWebsiteSettings(),
   ]);
   const settings = settingsResult.data ?? DEFAULT_WEBSITE_SETTINGS;
@@ -53,8 +54,9 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { slug } = await params;
   const [categoryResult, settingsResult] = await Promise.all([
-    getCategoryBySlug(params.slug),
+    getCategoryBySlug(slug),
     getWebsiteSettings(),
   ]);
   const category = categoryResult.data;

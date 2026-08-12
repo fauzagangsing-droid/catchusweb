@@ -67,11 +67,7 @@ create policy "Public read website settings"
   using (id = 1);
 
 drop policy if exists "Authenticated insert website settings" on public.website_settings;
-create policy "Authenticated insert website settings"
-  on public.website_settings for insert to authenticated
-  with check (id = 1);
-
 drop policy if exists "Authenticated update website settings" on public.website_settings;
-create policy "Authenticated update website settings"
-  on public.website_settings for update to authenticated
-  using (id = 1) with check (id = 1);
+
+-- Writes are intentionally disabled until customer_auth.sql installs the
+-- admin allow-list and the corresponding public.is_admin() policies.

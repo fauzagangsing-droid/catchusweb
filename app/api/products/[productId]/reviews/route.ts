@@ -9,13 +9,32 @@ const reviewSchema = z.object({
   images: z.array(z.string().url()).max(5).optional().default([]),
 });
 
-interface ReviewRouteContext { params: { productId: string } }
+interface ReviewRouteContext { params: Promise<{ productId: string }> }
+const productIdSchema = z.string().uuid();
 
 export async function GET(request: NextRequest, { params }: ReviewRouteContext) {
+  const { productId } = await params;
+  if (!productIdSchema.safeParse(productId).success) {
+    return NextResponse.json({ error: "Produk tidak ditemukan." }, { status: 404 });
+  }
   const sort = request.nextUrl.searchParams.get("sort") ?? "newest";
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  let query = supabase.from("product_reviews").select("*").eq("product_id", params.productId);
+  const service = createServiceRoleClient();
+  const { data: product } = await service
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!product) {
+    return NextResponse.json({ error: "Produk tidak ditemukan." }, { status: 404 });
+  }
+
+  let query = service
+    .from("product_reviews")
+    .select("id, product_id, user_id, rating, review, images, created_at, updated_at")
+    .eq("product_id", productId);
   if (sort === "highest") query = query.order("rating", { ascending: false }).order("created_at", { ascending: false });
   else if (sort === "lowest") query = query.order("rating", { ascending: true }).order("created_at", { ascending: false });
   else query = query.order("created_at", { ascending: false });
@@ -24,11 +43,10 @@ export async function GET(request: NextRequest, { params }: ReviewRouteContext) 
 
   let eligibleOrderId: string | null = null;
   if (user) {
-    const service = createServiceRoleClient();
     const { data: purchasedItems } = await service
       .from("order_items")
       .select("order_id, orders!inner(user_id,payment_status,created_at)")
-      .eq("product_id", params.productId)
+      .eq("product_id", productId)
       .eq("orders.user_id", user.id)
       .eq("orders.payment_status", "paid")
       .order("created_at", { ascending: false })
@@ -45,21 +63,30 @@ export async function GET(request: NextRequest, { params }: ReviewRouteContext) 
     reviewCount: reviewRows.length,
     canReview: Boolean(user && eligibleOrderId && !reviewRows.some((review) => review.user_id === user.id)),
     reviews: reviewRows.map((review) => ({
-      ...review,
+      id: review.id,
+      product_id: review.product_id,
+      rating: review.rating,
+      review: review.review,
+      images: review.images,
+      created_at: review.created_at,
+      updated_at: review.updated_at,
       reviewerName: "Verified Buyer",
       isOwn: review.user_id === user?.id,
-      user_id: undefined,
     })),
   });
 }
 
 export async function POST(request: NextRequest, { params }: ReviewRouteContext) {
+  const { productId } = await params;
   if (request.headers.get("origin") !== request.nextUrl.origin) {
     return NextResponse.json({ error: "Permintaan review tidak valid." }, { status: 403 });
   }
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Silakan masuk untuk memberi review." }, { status: 401 });
+  if (!productIdSchema.safeParse(productId).success) {
+    return NextResponse.json({ error: "Produk tidak ditemukan." }, { status: 404 });
+  }
   const parsed = reviewSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Review tidak valid." }, { status: 400 });
 
@@ -67,7 +94,7 @@ export async function POST(request: NextRequest, { params }: ReviewRouteContext)
   const { data: purchasedItems } = await service
     .from("order_items")
     .select("order_id, orders!inner(user_id,payment_status,created_at)")
-    .eq("product_id", params.productId)
+    .eq("product_id", productId)
     .eq("orders.user_id", user.id)
     .eq("orders.payment_status", "paid")
     .order("created_at", { ascending: false })
@@ -76,7 +103,7 @@ export async function POST(request: NextRequest, { params }: ReviewRouteContext)
   if (!orderId) return NextResponse.json({ error: "Hanya pembeli terverifikasi yang dapat memberi review." }, { status: 403 });
 
   const { data: review, error } = await service.from("product_reviews").insert({
-    product_id: params.productId,
+    product_id: productId,
     user_id: user.id,
     order_id: orderId,
     ...parsed.data,

@@ -8,7 +8,7 @@ import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage() {
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const {
     data: { user },
     error: userError,

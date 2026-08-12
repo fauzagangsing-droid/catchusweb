@@ -1,4 +1,5 @@
 import type { WebsiteSettings } from "@/types/database";
+import { safeNavigationHref } from "@/lib/safe-url";
 
 interface FooterProps { settings: WebsiteSettings; }
 
@@ -17,7 +18,13 @@ export default function Footer({ settings }: FooterProps) {
     settings.shopee_url && { href: settings.shopee_url, label: "Shopee", icon: "ri-shopping-bag-3-fill" },
     settings.tokopedia_url && { href: settings.tokopedia_url, label: "Tokopedia", icon: "ri-store-2-fill" },
     settings.tiktok_shop_url && { href: settings.tiktok_shop_url, label: "TikTok Shop", icon: "ri-shopping-cart-2-fill" },
-  ].filter((link): link is { href: string; label: string; icon: string } => Boolean(link));
+  ].flatMap((link) => {
+    if (!link) return [];
+    const href = link.href.startsWith("mailto:")
+      ? (/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(link.href) ? link.href : null)
+      : safeNavigationHref(link.href);
+    return href ? [{ ...link, href }] : [];
+  });
 
   return (
     <div className="footer" id="kontak">

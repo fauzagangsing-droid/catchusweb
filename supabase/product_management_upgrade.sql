@@ -8,10 +8,11 @@ alter table public.products
 comment on column public.products.short_description is
   'Concise product summary for product detail, quick view, and SEO metadata.';
 
--- Public image access stays limited to active products; authenticated admins
+-- Run after customer_auth.sql. Public access stays limited to active products; admins
 -- can also load galleries belonging to draft and inactive products.
 drop policy if exists "Authenticated read all product images" on public.product_images;
-create policy "Authenticated read all product images"
+drop policy if exists "Admins read all product images" on public.product_images;
+create policy "Admins read all product images"
   on public.product_images for select
   to authenticated
-  using (true);
+  using ((select public.is_admin()));

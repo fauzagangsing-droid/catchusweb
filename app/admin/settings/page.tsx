@@ -74,10 +74,15 @@ function validate(values: SettingsFormValues): FieldErrors {
   const heroUrl = values.hero_button_url.trim();
   if (heroUrl && !heroUrl.startsWith("/") && !heroUrl.startsWith("#")) {
     try {
-      new URL(heroUrl);
+      const url = new URL(heroUrl);
+      if (!["http:", "https:"].includes(url.protocol)) {
+        errors.hero_button_url = "Use an http(s) URL, /path, or #section.";
+      }
     } catch {
       errors.hero_button_url = "Use a full URL, /path, or #section.";
     }
+  } else if (heroUrl.startsWith("//")) {
+    errors.hero_button_url = "Use a full URL, /path, or #section.";
   }
 
   if (values.email && !/^\S+@\S+\.\S+$/.test(values.email)) {

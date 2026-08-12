@@ -21,21 +21,22 @@ import styles from "./payment.module.css";
 export const dynamic = "force-dynamic";
 
 interface PaymentPageProps {
-  params: { orderNumber: string };
+  params: Promise<{ orderNumber: string }>;
 }
 
 export default async function PaymentPage({ params }: PaymentPageProps) {
-  const supabase = createCustomerServerClient();
+  const { orderNumber } = await params;
+  const supabase = await createCustomerServerClient();
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
   if (!user || userError) {
-    redirect(`/login?next=${encodeURIComponent(`/payment/${params.orderNumber}`)}`);
+    redirect(`/login?next=${encodeURIComponent(`/payment/${orderNumber}`)}`);
   }
 
   const [orderResult, paymentResult, settingsResult] = await Promise.all([
-    getCustomerOrder(supabase, params.orderNumber),
+    getCustomerOrder(supabase, orderNumber),
     getPaymentSettings(supabase),
     getWebsiteSettings(),
   ]);

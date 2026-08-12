@@ -5,8 +5,12 @@ import { PASSWORD_RECOVERY_COOKIE } from "@/lib/supabase/customer-cookie";
 
 export const metadata: Metadata = { title: "Reset Password" };
 
-interface ResetPasswordPageProps { searchParams: { error?: string }; }
-export default function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
-  const recoveryAllowed = cookies().get(PASSWORD_RECOVERY_COOKIE)?.value === "1";
-  return <ResetPasswordForm callbackError={Boolean(searchParams.error) || !recoveryAllowed} />;
+interface ResetPasswordPageProps { searchParams: Promise<{ error?: string }>; }
+export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
+  const [cookieStore, resolvedSearchParams] = await Promise.all([
+    cookies(),
+    searchParams,
+  ]);
+  const recoveryAllowed = cookieStore.get(PASSWORD_RECOVERY_COOKIE)?.value === "1";
+  return <ResetPasswordForm callbackError={Boolean(resolvedSearchParams.error) || !recoveryAllowed} />;
 }

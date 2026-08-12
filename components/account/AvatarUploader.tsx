@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent } from "react";
+import { detectImageFileMime, imageExtension } from "@/lib/image-signature";
 import { createCustomerBrowserClient } from "@/lib/supabase/customer-browser";
 import styles from "./Account.module.css";
 
@@ -29,11 +30,16 @@ export default function AvatarUploader({ userId, onAvatarChange }: AvatarUploade
       return;
     }
 
+    const detectedMime = await detectImageFileMime(file);
+    if (!detectedMime || detectedMime !== file.type) {
+      setMessage("The file contents do not match a supported image format.");
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
     const supabase = createCustomerBrowserClient();
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${userId}/avatar-${Date.now()}.${extension}`;
+    const path = `${userId}/avatar-${Date.now()}.${imageExtension(detectedMime)}`;
 
     const { data: existingFiles } = await supabase.storage.from("avatars").list(userId);
     const existingPaths = (existingFiles ?? []).map((existing) => `${userId}/${existing.name}`);

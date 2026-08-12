@@ -4,7 +4,7 @@ import { normalizeShippingAddress } from "@/lib/shipping-addresses";
 import { createCustomerServerClient } from "@/lib/supabase/customer-server";
 
 export async function GET() {
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Silakan masuk kembali." }, { status: 401 });
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   if (request.headers.get("origin") !== request.nextUrl.origin) {
     return NextResponse.json({ error: "Permintaan alamat tidak valid." }, { status: 403 });
   }
-  const supabase = createCustomerServerClient();
+  const supabase = await createCustomerServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Silakan masuk kembali." }, { status: 401 });
 
