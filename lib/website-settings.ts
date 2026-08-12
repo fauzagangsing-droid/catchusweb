@@ -17,7 +17,7 @@ export const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
   website_description:
     "Catchus menghadirkan koleksi apparel dengan desain khas dan kualitas terbaik.",
   logo_url: null,
-  favicon_url: "/icons/nm.png",
+  favicon_url: "/icons/logo.png",
   hero_title: "Catchus Katalog",
   hero_subtitle:
     "Catchus menghadirkan koleksi apparel dengan desain khas dan kualitas terbaik. Setiap produk diproduksi dengan bahan pilihan serta perhatian tinggi pada detail, sehingga memberikan kenyamanan dan daya tahan lebih lama. Kami percaya bahwa fashion bukan hanya tentang pakaian, tetapi tentang bagaimana kamu mengekspresikan diri. Temukan koleksi Catchus yang sesuai dengan gaya.",

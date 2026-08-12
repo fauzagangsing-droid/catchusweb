@@ -34,7 +34,7 @@ create table if not exists public.website_settings (
   website_title       text not null default 'Catchus Official',
   website_description text not null default 'Catchus menghadirkan koleksi apparel dengan desain khas dan kualitas terbaik.',
   logo_url            text,
-  favicon_url         text default '/icons/nm.png',
+  favicon_url         text default '/icons/logo.png',
   hero_title          text not null default 'Catchus Katalog',
   hero_subtitle       text not null default 'Catchus menghadirkan koleksi apparel dengan desain khas dan kualitas terbaik.',
   hero_button_text    text not null default 'Detail Produk',

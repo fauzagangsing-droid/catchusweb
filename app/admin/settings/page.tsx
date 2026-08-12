@@ -208,7 +208,7 @@ function SettingsContent() {
                 <div className={styles.cardBody}>
                   <div className={styles.grid}>{field("brand_name", "Brand Name", "Catchus")}{field("website_title", "Website Title", "Catchus Official")}</div>
                   <div className={styles.field}><label htmlFor="setting-website_description">Website Description</label><textarea id="setting-website_description" rows={3} value={values.website_description} onChange={(event) => setField("website_description", event.target.value)} aria-invalid={Boolean(errors.website_description)} disabled={saving} />{errors.website_description && <span className={styles.fieldError}>{errors.website_description}</span>}</div>
-                  <div className={styles.grid}>{field("logo_url", "Logo URL", "https://... or /images/logo.png", "url")}{field("favicon_url", "Favicon URL", "/icons/nm.png", "url")}</div>
+                  <div className={styles.grid}>{field("logo_url", "Logo URL", "https://... or /images/logo.png", "url")}{field("favicon_url", "Favicon URL", "/icons/logo.png", "url")}</div>
                   <p className={styles.hint}>URL fields are upload-ready; use a public URL or an existing file from the public folder.</p>
                 </div>
               </section>
