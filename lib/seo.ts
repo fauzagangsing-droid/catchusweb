@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { resolveProductImage } from "@/lib/adapters";
 import type { ProductWithRelations, WebsiteSettings } from "@/types/database";
 
-const DEFAULT_SITE_URL = "https://catchus.my.id";
+const DEFAULT_SITE_URL = "https://www.catchus.my.id";
 const DEFAULT_SOCIAL_IMAGE = "/images/catchus.PNG";
 
 export interface PublicMetadataInput {

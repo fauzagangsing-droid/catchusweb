@@ -145,7 +145,7 @@ function createOrderEmbed(order: Order) {
         inline: false,
       },
     ],
-    footer: { text: "Catchus Official • https://catchus.my.id" },
+    footer: { text: "Catchus Official • https://www.catchus.my.id" },
     timestamp: new Date().toISOString(),
   };
 }
