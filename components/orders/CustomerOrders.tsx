@@ -51,7 +51,11 @@ export default function CustomerOrders({ orders, error }: CustomerOrdersProps) {
                     <div className={styles.image}>
                       <Image src={item.product_image_url ?? "/images/catchus.PNG"} alt={item.product_name} fill sizes="64px" />
                     </div>
-                    <div><strong>{item.product_name}</strong><span>{item.quantity} × {formatRupiah(item.unit_price)}</span></div>
+                    <div>
+                      <strong>{item.product_name}</strong>
+                      {item.selected_size && <span>Ukuran: {item.selected_size}</span>}
+                      <span>{item.quantity} × {formatRupiah(item.unit_price)}</span>
+                    </div>
                     <b>{formatRupiah(item.subtotal)}</b>
                   </div>
                 ))}

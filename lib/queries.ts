@@ -46,7 +46,8 @@ export const getProducts = cache(
         `
           *,
           category:categories ( * ),
-          product_images ( * )
+          product_images ( * ),
+          product_size_inventory ( * )
         `
       )
       .eq("status", "active")
@@ -66,7 +67,8 @@ export const getBestSellerProducts = cache(
         `
           *,
           category:categories ( * ),
-          product_images ( * )
+          product_images ( * ),
+          product_size_inventory ( * )
         `
       )
       .eq("status", "active")
@@ -88,7 +90,8 @@ export const getProductsByCategory = cache(
         `
           *,
           category:categories ( * ),
-          product_images ( * )
+          product_images ( * ),
+          product_size_inventory ( * )
         `
       )
       .eq("status", "active")
@@ -127,7 +130,8 @@ export const getProductBySlug = cache(
         `
           *,
           category:categories ( * ),
-          product_images ( * )
+          product_images ( * ),
+          product_size_inventory ( * )
         `
       )
       .eq("slug", slug)
@@ -151,7 +155,8 @@ export async function getRelatedProducts(
       `
         *,
         category:categories ( * ),
-        product_images ( * )
+        product_images ( * ),
+        product_size_inventory ( * )
       `
     )
     .eq("status", "active")

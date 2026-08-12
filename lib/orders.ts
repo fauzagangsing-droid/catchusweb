@@ -10,6 +10,12 @@ export function friendlyOrderError(message: string): string {
   if (normalized.includes("cart is empty")) {
     return "Keranjang Anda kosong.";
   }
+  if (normalized.includes("size must be selected")) {
+    return "Pilih ukuran untuk setiap produk sebelum checkout.";
+  }
+  if (normalized.includes("selected size is not available")) {
+    return "Ukuran produk di keranjang sudah tidak tersedia. Periksa keranjang lalu coba lagi.";
+  }
   if (normalized.includes("no longer available")) {
     return "Produk di keranjang Anda sudah tidak tersedia.";
   }

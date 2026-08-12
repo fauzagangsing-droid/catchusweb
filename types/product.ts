@@ -16,12 +16,3 @@ export interface Product {
   priceNew: string;
   weight: number;
 }
-
-export type ModelFilter = "T-shirt" | "Sweater";
-
-export interface ModelImage {
-  id: string;
-  image: string;
-  alt: string;
-  filter: ModelFilter;
-}

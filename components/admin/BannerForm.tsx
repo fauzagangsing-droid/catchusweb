@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { validateBannerVideoFile, validateImageFile } from "@/lib/storage";
 import type { Banner } from "@/types/database";
+import BannerImageCropper, {
+  type BannerCropKind,
+} from "./BannerImageCropper";
 import styles from "./BannerForm.module.css";
 
 export interface BannerFormValues {
@@ -36,6 +39,12 @@ interface BannerFormProps {
   uploadProgress: BannerUploadProgress;
   onSubmit: (values: BannerFormValues) => void;
   onCancel: () => void;
+}
+
+interface PendingCrop {
+  kind: BannerCropKind;
+  file: File;
+  sourceUrl: string;
 }
 
 type FormErrors = Partial<Record<
@@ -92,12 +101,19 @@ export default function BannerForm({
   const [desktopVideoPreview, setDesktopVideoPreview] = useState<string | null>(desktopVideoUrl);
   const [mobileVideoPreview, setMobileVideoPreview] = useState<string | null>(mobileVideoUrl);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [pendingCrop, setPendingCrop] = useState<PendingCrop | null>(null);
   const objectUrlsRef = useRef<string[]>([]);
 
   useEffect(() => {
     const objectUrls = objectUrlsRef.current;
     return () => objectUrls.forEach((url) => URL.revokeObjectURL(url));
   }, []);
+
+  const revokeObjectUrl = (url: string | null) => {
+    if (!url?.startsWith("blob:")) return;
+    URL.revokeObjectURL(url);
+    objectUrlsRef.current = objectUrlsRef.current.filter((candidate) => candidate !== url);
+  };
 
   const selectImage = (
     kind: "desktop" | "mobile",
@@ -116,18 +132,39 @@ export default function BannerForm({
       return;
     }
 
-    const previewUrl = URL.createObjectURL(file);
+    const sourceUrl = URL.createObjectURL(file);
+    objectUrlsRef.current.push(sourceUrl);
+    setPendingCrop({ kind, file, sourceUrl });
+  };
+
+  const cancelCrop = () => {
+    revokeObjectUrl(pendingCrop?.sourceUrl ?? null);
+    setPendingCrop(null);
+  };
+
+  const confirmCrop = (croppedFile: File) => {
+    if (!pendingCrop) return;
+    const previewUrl = URL.createObjectURL(croppedFile);
     objectUrlsRef.current.push(previewUrl);
 
-    if (kind === "desktop") {
-      setDesktopImageFile(file);
+    if (pendingCrop.kind === "desktop") {
+      revokeObjectUrl(desktopPreview);
+      setDesktopImageFile(croppedFile);
       setDesktopPreview(previewUrl);
-      setErrors((current) => ({ ...current, desktopImage: undefined, desktopMedia: undefined }));
+      setErrors((current) => ({
+        ...current,
+        desktopImage: undefined,
+        desktopMedia: undefined,
+      }));
     } else {
-      setMobileImageFile(file);
+      revokeObjectUrl(mobilePreview);
+      setMobileImageFile(croppedFile);
       setMobilePreview(previewUrl);
       setErrors((current) => ({ ...current, mobileImage: undefined }));
     }
+
+    revokeObjectUrl(pendingCrop.sourceUrl);
+    setPendingCrop(null);
   };
 
   const selectVideo = (
@@ -163,10 +200,12 @@ export default function BannerForm({
 
   const removeImage = (kind: "desktop" | "mobile") => {
     if (kind === "desktop") {
+      revokeObjectUrl(desktopPreview);
       setDesktopImageFile(null);
       setDesktopImageUrl(null);
       setDesktopPreview(null);
     } else {
+      revokeObjectUrl(mobilePreview);
       setMobileImageFile(null);
       setMobileImageUrl(null);
       setMobilePreview(null);
@@ -259,7 +298,12 @@ export default function BannerForm({
           )}
         </div>
 
-        <label className={styles.imagePicker} htmlFor={inputId}>
+        <label
+          className={`${styles.imagePicker} ${
+            kind === "desktop" ? styles.desktopImagePicker : styles.mobileImagePicker
+          }`}
+          htmlFor={inputId}
+        >
           {preview ? (
             // Banner URLs can be local previews or Supabase public URLs.
             // eslint-disable-next-line @next/next/no-img-element
@@ -416,6 +460,16 @@ export default function BannerForm({
           {submitting ? "Saving..." : initialBanner ? "Save Changes" : "Add Banner"}
         </button>
       </div>
+
+      {pendingCrop && (
+        <BannerImageCropper
+          file={pendingCrop.file}
+          kind={pendingCrop.kind}
+          sourceUrl={pendingCrop.sourceUrl}
+          onCancel={cancelCrop}
+          onConfirm={confirmCrop}
+        />
+      )}
     </form>
   );
 }

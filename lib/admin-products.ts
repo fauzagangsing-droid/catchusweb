@@ -6,6 +6,8 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import type {
   Category,
   ProductInsert,
+  ProductSize,
+  ProductSizeInventory,
   ProductStatus,
   ProductUpdate,
   ProductWithRelations,
@@ -36,6 +38,7 @@ export const NEW_ARRIVAL_THUMBNAIL_REQUIRED_MESSAGE =
   "Upload a custom New Arrival thumbnail before selecting this product.";
 export const NEW_ARRIVAL_ACTIVE_REQUIRED_MESSAGE =
   "Only active products can be selected for New Arrivals.";
+export const PRODUCT_SIZES: readonly ProductSize[] = ["S", "M", "L", "XL"];
 
 export type FeaturedFilter = "all" | "featured" | "not_featured";
 export type ActiveFilter = "all" | "active" | "inactive";
@@ -71,6 +74,9 @@ function toFriendlyError(rawMessage: string): string {
   }
   if (message.includes("new_arrival_active_required")) {
     return NEW_ARRIVAL_ACTIVE_REQUIRED_MESSAGE;
+  }
+  if (message.includes("product_size_inventory_stock_nonnegative")) {
+    return "Size stock must be a whole number of zero or more.";
   }
   if (message.includes("duplicate key") && message.includes("slug")) {
     return "That slug is already in use by another product. Try a different one.";
@@ -131,7 +137,8 @@ export async function getAdminProducts(
       `
         *,
         category:categories ( * ),
-        product_images ( * )
+        product_images ( * ),
+        product_size_inventory ( * )
       `,
       { count: "exact" }
     );
@@ -199,7 +206,8 @@ export async function createProduct(
       `
         *,
         category:categories ( * ),
-        product_images ( * )
+        product_images ( * ),
+        product_size_inventory ( * )
       `
     )
     .single();
@@ -222,7 +230,8 @@ export async function updateProduct(
       `
         *,
         category:categories ( * ),
-        product_images ( * )
+        product_images ( * ),
+        product_size_inventory ( * )
       `
     )
     .single();
@@ -231,6 +240,51 @@ export async function updateProduct(
     return { data: null, error: toFriendlyError(error.message) };
   }
   return { data, error: null };
+}
+
+export interface ProductSizeFormValue {
+  size: ProductSize;
+  isEnabled: boolean;
+  stock: string;
+}
+
+export async function syncProductSizeInventory(
+  productId: string,
+  sizes: ProductSizeFormValue[],
+  legacyStock: number
+): Promise<AdminQueryResult<ProductSizeInventory[]>> {
+  const rows = PRODUCT_SIZES.map((size) => {
+    const value = sizes.find((candidate) => candidate.size === size);
+    return {
+      product_id: productId,
+      size,
+      is_enabled: value?.isEnabled ?? false,
+      stock: Number(value?.stock ?? 0),
+    };
+  });
+
+  const { data, error } = await supabaseBrowser
+    .from("product_size_inventory")
+    .upsert(rows, { onConflict: "product_id,size" })
+    .select("*");
+
+  if (error) return { data: null, error: toFriendlyError(error.message) };
+
+  const enabledStock = rows
+    .filter((row) => row.is_enabled)
+    .reduce((total, row) => total + row.stock, 0);
+  const aggregateStock = rows.some((row) => row.is_enabled)
+    ? enabledStock
+    : legacyStock;
+  const { error: stockError } = await supabaseBrowser
+    .from("products")
+    .update({ stock: aggregateStock })
+    .eq("id", productId);
+
+  if (stockError) {
+    return { data: null, error: toFriendlyError(stockError.message) };
+  }
+  return { data: data ?? [], error: null };
 }
 
 export async function deleteProduct(id: string): Promise<AdminQueryResult<true>> {
@@ -341,6 +395,7 @@ export interface ProductFormValues {
   shortDescription: string;
   description: string;
   featured: boolean;
+  sizeInventory: ProductSizeFormValue[];
   shopeeUrl: string;
   tokopediaUrl: string;
   tiktokShopUrl: string;
@@ -420,7 +475,10 @@ const productFormSchema = z
  * messages. Returns an empty object when the form is valid.
  */
 export function validateProductForm(
-  values: Omit<ProductFormValues, "images" | "newArrivalThumbnail">
+  values: Omit<
+    ProductFormValues,
+    "images" | "newArrivalThumbnail" | "sizeInventory"
+  >
 ): ProductFormErrors {
   const errors: ProductFormErrors = {};
   const result = productFormSchema.safeParse(values);
@@ -432,4 +490,26 @@ export function validateProductForm(
     }
   }
   return errors;
+}
+
+export function validateProductSizeInventory(
+  sizes: ProductSizeFormValue[]
+): string | null {
+  if (
+    sizes.length !== PRODUCT_SIZES.length ||
+    PRODUCT_SIZES.some((size) => !sizes.some((value) => value.size === size))
+  ) {
+    return "Size inventory must contain exactly S, M, L, and XL.";
+  }
+
+  for (const size of sizes) {
+    if (
+      !size.stock.trim() ||
+        !Number.isInteger(Number(size.stock)) ||
+        Number(size.stock) < 0
+    ) {
+      return `Stock for size ${size.size} must be a whole number of zero or more.`;
+    }
+  }
+  return null;
 }

@@ -6,26 +6,38 @@ import { useState } from "react";
 import { addProductToCart, friendlyCartError } from "@/lib/cart";
 import { createCustomerBrowserClient } from "@/lib/supabase/customer-browser";
 import { useCart } from "@/hooks/useCart";
+import type { ProductSize, ProductSizeInventory } from "@/types/database";
 import styles from "./AddToCartButton.module.css";
 
 interface AddToCartButtonProps {
   productId: string;
   productName: string;
   stock: number;
+  sizes: ProductSizeInventory[];
 }
 
 export default function AddToCartButton({
   productId,
   productName,
   stock,
+  sizes,
 }: AddToCartButtonProps) {
   const router = useRouter();
   const { refreshCart } = useCart();
   const [pendingAction, setPendingAction] = useState<"cart" | "buy_now" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
+
+  const enabledSizes = sizes.filter((size) => size.is_enabled);
+  const requiresSize = enabledSizes.length > 0;
 
   async function handleAddToCart(buyNow = false) {
+    if (requiresSize && !selectedSize) {
+      setAdded(false);
+      setMessage("Pilih ukuran sebelum melanjutkan.");
+      return;
+    }
     setPendingAction(buyNow ? "buy_now" : "cart");
     setMessage(null);
     setAdded(false);
@@ -42,7 +54,7 @@ export default function AddToCartButton({
         return;
       }
 
-      await addProductToCart(productId, 1, supabase);
+      await addProductToCart(productId, 1, selectedSize, supabase);
       await refreshCart();
       if (buyNow) {
         router.push("/checkout");
@@ -59,10 +71,41 @@ export default function AddToCartButton({
     }
   }
 
-  const outOfStock = stock < 1;
+  const outOfStock = requiresSize
+    ? enabledSizes.every((size) => size.stock < 1)
+    : stock < 1;
 
   return (
     <div className={styles.wrapper}>
+      {requiresSize && (
+        <fieldset className={styles.sizeSelector}>
+          <legend>Choose size</legend>
+          <div className={styles.sizeOptions}>
+            {enabledSizes.map((size) => {
+              const unavailable = size.stock < 1;
+              return (
+                <button
+                  key={size.size}
+                  type="button"
+                  className={selectedSize === size.size ? styles.selectedSize : ""}
+                  onClick={() => {
+                    setSelectedSize(size.size);
+                    setMessage(null);
+                  }}
+                  disabled={unavailable || Boolean(pendingAction)}
+                  aria-pressed={selectedSize === size.size}
+                  aria-label={
+                    unavailable ? `Size ${size.size}, out of stock` : `Size ${size.size}`
+                  }
+                >
+                  {size.size}
+                </button>
+              );
+            })}
+          </div>
+          <span>Select one available size before adding this product.</span>
+        </fieldset>
+      )}
       <div className={styles.actions}>
         <button
           type="button"

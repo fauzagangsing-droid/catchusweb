@@ -16,6 +16,8 @@
 .mediaError { grid-column: 1 / -1; padding: 10px 12px; border: 1px solid #f3c4c9; border-radius: 8px; background: #fdecee; color: #b3222f; font-size: 12px; }
 .imageLabelRow { min-height: 43px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .imagePicker { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1.5px dashed #d8d8d8; border-radius: 10px; background: #f7f7f7; cursor: pointer; }
+.desktopImagePicker { aspect-ratio: 16 / 7; }
+.mobileImagePicker { width: min(100%, 300px); margin-inline: auto; aspect-ratio: 2 / 3; }
 .imagePicker img, .imagePicker video { width: 100%; height: 100%; display: block; object-fit: cover; }
 .emptyImage { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #777; font-size: 12.5px; font-weight: 600; }
 .emptyImage i { color: #aaa; font-size: 28px; }

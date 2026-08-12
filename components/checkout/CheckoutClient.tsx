@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useCart } from "@/hooks/useCart";
 import { formatRupiah, resolveProductImage } from "@/lib/adapters";
-import { calculateCartTotals, getCart } from "@/lib/cart";
+import { calculateCartTotals, getCart, isCartItemAvailable } from "@/lib/cart";
 import {
   isBankTransferConfigured,
   isDanaConfigured,
@@ -148,9 +148,7 @@ export default function CheckoutClient({
   const shippingCost = selectedOption?.cost ?? 0;
   const discount = voucher?.discount ?? 0;
   const total = Math.max(totals.subtotal + shippingCost - discount, 0);
-  const hasUnavailableItems = items.some(
-    (item) => !item.product || item.product.stock < item.quantity
-  );
+  const hasUnavailableItems = items.some((item) => !isCartItemAvailable(item));
 
   function handleAddressesChange(nextAddresses: ShippingAddress[], preferredId?: string) {
     setAddresses(nextAddresses);
@@ -356,7 +354,11 @@ export default function CheckoutClient({
                       />
                       <span>{item.quantity}</span>
                     </div>
-                    <div><strong>{item.product?.name ?? "Produk tidak tersedia"}</strong><small>{formatRupiah(item.product?.price ?? 0)}</small></div>
+                    <div>
+                      <strong>{item.product?.name ?? "Produk tidak tersedia"}</strong>
+                      {item.selected_size && <small>Ukuran: {item.selected_size}</small>}
+                      <small>{formatRupiah(item.product?.price ?? 0)}</small>
+                    </div>
                     <b>{formatRupiah((item.product?.price ?? 0) * item.quantity)}</b>
                   </div>
                 ))}

@@ -160,6 +160,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               productId={product.id}
               productName={product.name}
               stock={product.stock}
+              sizes={product.product_size_inventory}
             />
 
             {marketplaces.length > 0 && (

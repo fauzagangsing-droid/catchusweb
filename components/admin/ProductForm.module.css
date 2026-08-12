@@ -147,6 +147,72 @@
   accent-color: #000;
 }
 
+.sizeInventory {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sizeInventoryHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sizeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sizeRow {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1.5px solid #e2e2e2;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sizeToggle,
+.sizeStock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sizeToggle {
+  cursor: pointer;
+}
+
+.sizeToggle input {
+  width: 17px;
+  height: 17px;
+  accent-color: #000;
+}
+
+.sizeStock span {
+  color: #777;
+  font-size: 12px;
+}
+
+.sizeStock input {
+  width: 76px;
+  padding: 8px 9px;
+  border: 1.5px solid #e2e2e2;
+  border-radius: 7px;
+  color: #111;
+  font: inherit;
+}
+
+.sizeStock input:disabled {
+  background-color: #f3f3f3;
+  color: #aaa;
+}
+
 .newArrivalImageField {
   display: flex;
   flex-direction: column;
@@ -328,6 +394,10 @@
   .threeColumnRow,
   .sectionBody.row,
   .marketplaceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sizeGrid {
     grid-template-columns: 1fr;
   }
 }

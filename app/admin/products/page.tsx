@@ -21,6 +21,7 @@ import {
   getCategoriesBrowser,
   setProductFeatured,
   setProductStatus,
+  syncProductSizeInventory,
   updateProduct,
   type ActiveFilter,
   type FeaturedFilter,
@@ -288,7 +289,11 @@ function ProductsContent() {
       price: Number(values.price),
       compare_price: values.comparePrice.trim() ? Number(values.comparePrice) : null,
       category_id: values.categoryId,
-      stock: Number(values.stock),
+      stock: values.sizeInventory.some((item) => item.isEnabled)
+        ? values.sizeInventory
+            .filter((item) => item.isEnabled)
+            .reduce((total, item) => total + Number(item.stock), 0)
+        : Number(values.stock),
       weight: Number(values.weight),
       short_description: values.shortDescription.trim() || null,
       description: values.description.trim() || null,
@@ -319,6 +324,27 @@ function ProductsContent() {
       return;
     }
 
+    const sizeResult = await syncProductSizeInventory(
+      result.data.id,
+      values.sizeInventory,
+      Number(values.stock)
+    );
+    if (sizeResult.error || !sizeResult.data) {
+      setModalMode("edit");
+      setEditingProduct(result.data);
+      setFormError(sizeResult.error ?? "Size inventory could not be saved.");
+      setFormSubmitting(false);
+      setNewArrivalUploadProgress(null);
+      await loadProducts();
+      return;
+    }
+
+    const savedProduct = {
+      ...result.data,
+      stock: basePayload.stock,
+      product_size_inventory: sizeResult.data,
+    };
+
     if (
       editingProduct?.new_arrival_image_url &&
       editingProduct.new_arrival_image_url !== newArrivalImageUrl
@@ -342,7 +368,7 @@ function ProductsContent() {
 
     if (imageResult.error) {
       setModalMode("edit");
-      setEditingProduct(result.data);
+      setEditingProduct(savedProduct);
       setFormError(imageResult.error);
       setFormSubmitting(false);
       setNewArrivalUploadProgress(null);

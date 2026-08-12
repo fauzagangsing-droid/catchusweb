@@ -13,10 +13,13 @@ import type { Category, ProductStatus, ProductWithRelations } from "@/types/data
 import { DEFAULT_PRODUCT_WEIGHT_KG } from "@/lib/product-weight";
 import { validateImageFile } from "@/lib/storage";
 import {
+  PRODUCT_SIZES,
   slugify,
   validateProductForm,
+  validateProductSizeInventory,
   type ProductFormErrors,
   type ProductFormValues,
+  type ProductSizeFormValue,
 } from "@/lib/admin-products";
 import ImageUploader from "./ImageUploader";
 import styles from "./ProductForm.module.css";
@@ -32,7 +35,10 @@ export interface ProductFormProps {
   onCancel: () => void;
 }
 
-type TextFieldValues = Omit<ProductFormValues, "images" | "newArrivalThumbnail">;
+type TextFieldValues = Omit<
+  ProductFormValues,
+  "images" | "newArrivalThumbnail" | "sizeInventory"
+>;
 
 function toFormValues(product?: ProductWithRelations | null): TextFieldValues {
   return {
@@ -68,6 +74,18 @@ export default function ProductForm({
   onCancel,
 }: ProductFormProps) {
   const [values, setValues] = useState<TextFieldValues>(() => toFormValues(initialProduct));
+  const [sizeInventory, setSizeInventory] = useState<ProductSizeFormValue[]>(() =>
+    PRODUCT_SIZES.map((size) => {
+      const existing = initialProduct?.product_size_inventory?.find(
+        (candidate) => candidate.size === size
+      );
+      return {
+        size,
+        isEnabled: existing?.is_enabled ?? false,
+        stock: String(existing?.stock ?? 0),
+      };
+    })
+  );
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [slugTouched, setSlugTouched] = useState(Boolean(initialProduct));
   const [newArrivalImageUrl, setNewArrivalImageUrl] = useState<string | null>(
@@ -148,6 +166,21 @@ export default function ProductForm({
     if (errors[field]) setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
+  const setSizeField = (
+    size: ProductSizeFormValue["size"],
+    field: "isEnabled" | "stock",
+    value: boolean | string
+  ) => {
+    setSizeInventory((current) =>
+      current.map((item) =>
+        item.size === size ? { ...item, [field]: value } : item
+      )
+    );
+    if (errors.sizeInventory) {
+      setErrors((current) => ({ ...current, sizeInventory: undefined }));
+    }
+  };
+
   const handleNameChange = (name: string) => {
     setValues((current) => ({
       ...current,
@@ -159,6 +192,8 @@ export default function ProductForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextErrors = validateProductForm(values);
+    const sizeInventoryError = validateProductSizeInventory(sizeInventory);
+    if (sizeInventoryError) nextErrors.sizeInventory = sizeInventoryError;
     setErrors(nextErrors);
     const missingNewArrivalImage =
       values.featured && !newArrivalImageUrl && !newArrivalImageFile;
@@ -174,6 +209,7 @@ export default function ProductForm({
     ) {
       onSubmit({
         ...values,
+        sizeInventory,
         newArrivalThumbnail: {
           imageUrl: newArrivalImageUrl,
           file: newArrivalImageFile,
@@ -182,6 +218,11 @@ export default function ProductForm({
       });
     }
   };
+
+  const hasEnabledSizes = sizeInventory.some((item) => item.isEnabled);
+  const enabledSizeStock = sizeInventory
+    .filter((item) => item.isEnabled)
+    .reduce((total, item) => total + (Number(item.stock) || 0), 0);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
@@ -295,7 +336,12 @@ export default function ProductForm({
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="product-stock">Stock</label>
-              <input id="product-stock" type="number" min="0" step="1" className={styles.input} value={values.stock} onChange={(event) => setField("stock", event.target.value)} aria-invalid={Boolean(errors.stock)} disabled={submitting} />
+              <input id="product-stock" type="number" min="0" step="1" className={styles.input} value={hasEnabledSizes ? String(enabledSizeStock) : values.stock} onChange={(event) => setField("stock", event.target.value)} aria-invalid={Boolean(errors.stock)} disabled={submitting || hasEnabledSizes} />
+              <span className={styles.hint}>
+                {hasEnabledSizes
+                  ? "Calculated from enabled sizes."
+                  : "Legacy stock used when no size is enabled."}
+              </span>
               {errors.stock && <span className={styles.fieldError}>{errors.stock}</span>}
             </div>
             <div className={styles.field}>
@@ -303,6 +349,46 @@ export default function ProductForm({
               <input id="product-weight" type="number" min="0" step="0.01" className={styles.input} value={values.weight} onChange={(event) => setField("weight", event.target.value)} placeholder="0.30" aria-invalid={Boolean(errors.weight)} disabled={submitting} required />
               {errors.weight && <span className={styles.fieldError}>{errors.weight}</span>}
             </div>
+          </div>
+          <div className={styles.sizeInventory}>
+            <div className={styles.sizeInventoryHeader}>
+              <span className={styles.label}>Sizes &amp; Stock</span>
+              <span className={styles.hint}>Enable only the sizes customers can select.</span>
+            </div>
+            <div className={styles.sizeGrid}>
+              {sizeInventory.map((item) => (
+                <div className={styles.sizeRow} key={item.size}>
+                  <label className={styles.sizeToggle}>
+                    <input
+                      type="checkbox"
+                      checked={item.isEnabled}
+                      onChange={(event) =>
+                        setSizeField(item.size, "isEnabled", event.target.checked)
+                      }
+                      disabled={submitting}
+                    />
+                    <strong>{item.size}</strong>
+                  </label>
+                  <label className={styles.sizeStock}>
+                    <span>Stock</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={item.stock}
+                      onChange={(event) =>
+                        setSizeField(item.size, "stock", event.target.value)
+                      }
+                      disabled={submitting || !item.isEnabled}
+                      aria-label={`Stock for size ${item.size}`}
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+            {errors.sizeInventory && (
+              <span className={styles.fieldError}>{errors.sizeInventory}</span>
+            )}
           </div>
           <div className={styles.row}>
             <div className={styles.field}>

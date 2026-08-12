@@ -6,6 +6,7 @@
  */
 
 export type ProductStatus = "active" | "inactive" | "draft" | "out_of_stock";
+export type ProductSize = "S" | "M" | "L" | "XL";
 
 export type Category = {
   id: string;
@@ -107,7 +108,12 @@ export type CartItemUpdate = Partial<
 >;
 
 export interface CartItemWithProduct extends CartItem {
-  product: (Product & { product_images: ProductImage[] }) | null;
+  product:
+    | (Product & {
+        product_images: ProductImage[];
+        product_size_inventory: ProductSizeInventory[];
+      })
+    | null;
 }
 
 export type PaymentMethod = "qris" | "dana" | "bank_transfer";
@@ -255,15 +261,20 @@ export type OrderItem = {
   product_image_url: string | null;
   selected_size: string | null;
   selected_color: string | null;
+  size_stock_reserved: boolean;
   quantity: number;
   unit_price: number;
   subtotal: number;
   created_at: string;
 };
 
-export type OrderItemInsert = Omit<OrderItem, "id" | "created_at"> & {
+export type OrderItemInsert = Omit<
+  OrderItem,
+  "id" | "created_at" | "size_stock_reserved"
+> & {
   id?: string;
   created_at?: string;
+  size_stock_reserved?: boolean;
 };
 
 export type OrderItemUpdate = Partial<
@@ -408,10 +419,35 @@ export type ProductImage = {
   created_at: string;
 };
 
+export type ProductSizeInventory = {
+  id: string;
+  product_id: string;
+  size: ProductSize;
+  stock: number;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProductSizeInventoryInsert = {
+  id?: string;
+  product_id: string;
+  size: ProductSize;
+  stock?: number;
+  is_enabled?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ProductSizeInventoryUpdate = Partial<
+  Omit<ProductSizeInventoryInsert, "id" | "product_id" | "size">
+>;
+
 /** A product row joined with its category and images, as returned by lib/queries.ts */
 export interface ProductWithRelations extends Product {
   category: Category | null;
   product_images: ProductImage[];
+  product_size_inventory: ProductSizeInventory[];
 }
 
 /**
@@ -649,13 +685,31 @@ export interface Database {
           }
         ];
       };
+      product_size_inventory: {
+        Row: ProductSizeInventory;
+        Insert: ProductSizeInventoryInsert;
+        Update: ProductSizeInventoryUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "product_size_inventory_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
       add_cart_item: {
-        Args: { p_product_id: string; p_quantity?: number };
+        Args: {
+          p_product_id: string;
+          p_quantity?: number;
+          p_selected_size?: string | null;
+        };
         Returns: CartItem;
       };
       update_cart_item_quantity: {

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import BestSeller from "@/components/BestSeller";
-import ModelGallery from "@/components/ModelGallery";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import {
@@ -59,7 +58,6 @@ export default async function Home() {
         buttonUrl={settings.hero_button_url}
       />
       <BestSeller products={bestSellersResult.data ?? []} />
-      <ModelGallery />
       <Footer settings={settings} />
     </>
   );

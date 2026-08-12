@@ -8,7 +8,9 @@ import { formatRupiah, resolveProductImage } from "@/lib/adapters";
 import {
   calculateCartTotals,
   friendlyCartError,
+  getCartItemAvailableStock,
   getCart,
+  isCartItemAvailable,
   removeCartItem,
   updateCartItemQuantity,
 } from "@/lib/cart";
@@ -46,16 +48,14 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
   }, [loadCart]);
 
   const totals = useMemo(() => calculateCartTotals(items), [items]);
-  const hasUnavailableItems = items.some(
-    (item) => !item.product || item.product.stock < item.quantity
-  );
+  const hasUnavailableItems = items.some((item) => !isCartItemAvailable(item));
 
   async function changeQuantity(item: CartItemWithProduct, nextQuantity: number) {
     if (
       busyItemId ||
       !item.product ||
       nextQuantity < 1 ||
-      nextQuantity > item.product.stock
+      nextQuantity > getCartItemAvailableStock(item)
     ) {
       return;
     }
@@ -154,6 +154,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                 const product = item.product;
                 const itemBusy = busyItemId === item.id;
                 const itemSubtotal = product ? product.price * item.quantity : 0;
+                const availableStock = getCartItemAvailableStock(item);
 
                 return (
                   <article className={styles.item} key={item.id}>
@@ -198,7 +199,7 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                           <button
                             type="button"
                             onClick={() => changeQuantity(item, item.quantity + 1)}
-                            disabled={itemBusy || !product || item.quantity >= product.stock}
+                            disabled={itemBusy || !product || item.quantity >= availableStock}
                             aria-label="Tambah jumlah"
                           >
                             <i className="ri-add-line" aria-hidden="true" />
@@ -219,8 +220,8 @@ export default function CartPageClient({ brandName }: CartPageClientProps) {
                     <div className={styles.itemTotal}>
                       <span>Subtotal</span>
                       <strong>{formatRupiah(itemSubtotal)}</strong>
-                      {product && product.stock < item.quantity && (
-                        <small>Stok tersisa {product.stock}</small>
+                      {product && availableStock < item.quantity && (
+                        <small>Stok tersisa {availableStock}</small>
                       )}
                     </div>
                   </article>

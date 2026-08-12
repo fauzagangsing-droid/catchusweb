@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createCustomerBrowserClient } from "@/lib/supabase/customer-browser";
-import type { Database, CartItemWithProduct } from "@/types/database";
+import type { Database, CartItemWithProduct, ProductSize } from "@/types/database";
 import type { CartCountSnapshot, CartData, CartTotals } from "@/types/cart";
 import { resolveProductWeightKg } from "@/lib/product-weight";
 
@@ -18,6 +18,12 @@ export function friendlyCartError(message: string): string {
   }
   if (normalized.includes("exceeds available stock")) {
     return "Jumlah yang diminta melebihi stok yang tersedia.";
+  }
+  if (normalized.includes("size must be selected")) {
+    return "Pilih ukuran produk sebelum menambahkannya ke keranjang.";
+  }
+  if (normalized.includes("selected size is not available")) {
+    return "Ukuran yang dipilih sudah tidak tersedia.";
   }
   if (normalized.includes("product is not available")) {
     return "Produk ini sudah tidak tersedia.";
@@ -90,7 +96,8 @@ export async function getCart(
         *,
         product:products (
           *,
-          product_images ( * )
+          product_images ( * ),
+          product_size_inventory ( * )
         )
       `
     )
@@ -108,14 +115,34 @@ export async function getCart(
 export async function addProductToCart(
   productId: string,
   quantity = 1,
+  selectedSize: ProductSize | null = null,
   client?: CustomerSupabaseClient
 ): Promise<void> {
   const { error } = await getClient(client).rpc("add_cart_item", {
     p_product_id: productId,
     p_quantity: quantity,
+    p_selected_size: selectedSize,
   });
 
   if (error) throw new Error(error.message);
+}
+
+export function getCartItemAvailableStock(item: CartItemWithProduct): number {
+  if (!item.product) return 0;
+  const enabledSizes = item.product.product_size_inventory.filter(
+    (size) => size.is_enabled
+  );
+  if (enabledSizes.length === 0) return item.product.stock;
+  if (!item.selected_size) return 0;
+  return (
+    enabledSizes.find((size) => size.size === item.selected_size)?.stock ?? 0
+  );
+}
+
+export function isCartItemAvailable(item: CartItemWithProduct): boolean {
+  return Boolean(
+    item.product && getCartItemAvailableStock(item) >= item.quantity
+  );
 }
 
 export async function updateCartItemQuantity(
