@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { resolveProductImage } from "@/lib/adapters";
 import type { ProductWithRelations, WebsiteSettings } from "@/types/database";
 
-const DEFAULT_SITE_URL = "http://localhost:3000";
+const DEFAULT_SITE_URL = "https://catchus.my.id";
 const DEFAULT_SOCIAL_IMAGE = "/images/catchus.PNG";
 
 export interface PublicMetadataInput {
@@ -16,9 +16,7 @@ export interface PublicMetadataInput {
 }
 
 export function getSiteUrl(): string {
-  const configuredUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : DEFAULT_SITE_URL);
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL ?? DEFAULT_SITE_URL;
 
   try {
     return new URL(configuredUrl).origin;

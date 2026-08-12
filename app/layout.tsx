@@ -6,6 +6,8 @@ import { getWebsiteSettings } from "@/lib/queries";
 import { getSiteUrl } from "@/lib/seo";
 import { DEFAULT_WEBSITE_SETTINGS } from "@/lib/website-settings";
 
+const DEFAULT_FAVICON_URL = "/icons/logo.png";
+
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -16,13 +18,16 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export async function generateMetadata(): Promise<Metadata> {
   const result = await getWebsiteSettings();
   const settings = result.data ?? DEFAULT_WEBSITE_SETTINGS;
-  const faviconUrl = settings.favicon_url || DEFAULT_WEBSITE_SETTINGS.favicon_url;
+  const faviconUrl = settings.favicon_url?.trim() || DEFAULT_FAVICON_URL;
+
   return {
     metadataBase: new URL(getSiteUrl()),
     title: settings.website_title,
     description: settings.website_description,
     applicationName: settings.brand_name,
-    icons: faviconUrl ? { icon: faviconUrl } : undefined,
+    icons: {
+      icon: [{ url: faviconUrl }],
+    },
   };
 }
 
