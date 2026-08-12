@@ -39,18 +39,22 @@ const REQUIRED_FIELDS: Array<keyof SettingsFormValues> = [
 
 function toFormValues(settings: WebsiteSettings): SettingsFormValues {
   const { id: _id, updated_at: _updatedAt, ...values } = settings;
-  return values;
+  return {
+    ...values,
+    favicon_url: values.favicon_url || DEFAULT_WEBSITE_SETTINGS.favicon_url,
+  };
 }
 
-function friendlyError(result: WebsiteSettingsResult): string | null {
-  if (!result.error) return null;
-  if (result.error.toLowerCase().includes("website_settings")) {
-    return "Website settings are not installed yet. Run supabase/website_settings.sql in Supabase.";
+function friendlyError(result: WebsiteSettingsResult): string {
+  const detail = result.error?.trim();
+  if (!detail) return "Website settings could not be loaded or saved. Please try again.";
+  if (
+    detail.toLowerCase().includes("row-level security") ||
+    detail.toLowerCase().includes("permission denied")
+  ) {
+    return `You don't have permission to update website settings. Please sign in again. Supabase: ${detail}`;
   }
-  if (result.error.toLowerCase().includes("row-level security")) {
-    return "You don't have permission to update website settings. Please sign in again.";
-  }
-  return "Website settings could not be saved. Please try again.";
+  return `Website settings request failed. Supabase: ${detail}`;
 }
 
 function validate(values: SettingsFormValues): FieldErrors {
@@ -194,6 +198,7 @@ function SettingsContent() {
 
     const optional = (value: string | null) => value?.trim() || null;
     let uploadedFaviconPath: string | null = null;
+    let operation: "upload" | "save" = faviconFile ? "upload" : "save";
 
     try {
       let faviconUrl = optional(values.favicon_url);
@@ -204,6 +209,7 @@ function SettingsContent() {
         ).promise;
         uploadedFaviconPath = uploaded.path;
         faviconUrl = uploaded.publicUrl;
+        operation = "save";
       }
 
       const payload: WebsiteSettingsUpdate = {
@@ -232,7 +238,11 @@ function SettingsContent() {
         if (uploadedFaviconPath) {
           await deleteStorageImage(uploadedFaviconPath, BANNER_IMAGE_BUCKET);
         }
-        setErrorMessage(friendlyError(result));
+        const message = friendlyError(result);
+        setErrorMessage(message);
+        if (faviconFile) {
+          setFaviconError(`The favicon was uploaded, but its URL could not be saved. ${message}`);
+        }
         return;
       }
 
@@ -261,8 +271,10 @@ function SettingsContent() {
         await deleteStorageImage(uploadedFaviconPath, BANNER_IMAGE_BUCKET);
       }
       const detail = error instanceof Error ? error.message : "Please try again.";
-      const message = `Favicon upload failed. ${detail}`;
-      setFaviconError(message);
+      const message = operation === "upload"
+        ? `Favicon upload failed. ${detail}`
+        : `Website settings could not be saved. ${detail}`;
+      if (faviconFile) setFaviconError(message);
       setErrorMessage(message);
     } finally {
       setSaving(false);
